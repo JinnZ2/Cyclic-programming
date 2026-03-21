@@ -6,7 +6,7 @@ Cyclical Programming Language - Complete Feature Showcase
 
 import sys
 sys.path.insert(0, ‘/mnt/user-data/outputs’)
-from cyclical_interpreter import CyclicalInterpreter
+from cyclical_interpreter import CyclicalInterpreter, COBOLBridge
 
 def epic_demo():
 print(”=”*80)
@@ -21,8 +21,10 @@ print(”  ✓ Spatial Gradients”)
 print(”  ✓ Multi-Field Networks”)
 print(”  ✓ Regenerative Cycles”)
 print(”  ✓ Natural Decay”)
-print(”  ✓ Symbiotic Relationships”)
-print(”=”*80)
+print(“  ✓ Symbiotic Relationships”)
+print(“  ✓ COBOL Ecosystem Bridge”)
+print(“  ✓ COBOL Inline Syntax”)
+print(“=”*80)
 
 ```
 # Example 1: Quantum Entanglement
@@ -248,7 +250,106 @@ print(f"Field Count:           {len(interp8.fields)}")
 print(f"Sustainability Index:  {state['average_capacity'] / state['total_system_entropy'] * state['average_coherence']:.4f}")
 print("="*80)
 
-print("\n🌟 ALL FEATURES DEMONSTRATED SUCCESSFULLY! 🌟\n")
+    # Example 9: COBOL Ecosystem
+    print("\n" + "="*80)
+    print("EXAMPLE 9: COBOL ECOSYSTEM - ENTERPRISE MEETS PHYSICS")
+    print("="*80)
+    print("Running a cyclic ecosystem defined entirely in COBOL syntax...")
+
+    cobol_program = """
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. CYCLIC-ECOSYSTEM.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 MAINFRAME PIC 9(5) VALUE 200 FREQUENCY 2.0.
+       01 DATABASE PIC 9(5) VALUE 120 FREQUENCY 3.0.
+       01 NETWORK PIC 9(5) VALUE 80 FREQUENCY 5.0.
+       01 TERMINAL PIC 9(5) VALUE 50 FREQUENCY 7.0.
+
+       PROCEDURE DIVISION.
+       *> Enterprise energy exchange
+       MOVE 10 FROM MAINFRAME TO DATABASE.
+       MOVE 5 FROM DATABASE TO NETWORK.
+
+       *> Quantum-link the mainframe and database
+       ENTANGLE MAINFRAME WITH DATABASE.
+
+       *> Regenerate network capacity
+       COMPUTE NETWORK = REGENERATE 30.
+       COMPUTE TERMINAL = REGENERATE 15.
+
+       *> Resonate database and network (harmonic sync)
+       RESONATE DATABASE WITH NETWORK.
+
+       *> Terminal-network symbiosis
+       SYMBIOSIS TERMINAL WITH NETWORK.
+
+       *> Mainframe natural decay over time
+       DECAY MAINFRAME BY 0.03.
+
+       *> Phase transition: terminal goes plasma (high performance)
+       TRANSITION TERMINAL TO GAS.
+
+       *> Display final state
+       DISPLAY MAINFRAME.
+       DISPLAY DATABASE.
+       DISPLAY NETWORK.
+       DISPLAY TERMINAL.
+
+       STOP RUN.
+    """
+
+    interp9 = CyclicalInterpreter()
+    bridge = interp9.cobol_bridge()
+
+    print("\nExecuting COBOL program through Cyclic interpreter...")
+    print("-"*80)
+    cobol_results = bridge.execute_cobol(cobol_program)
+    print("-"*80)
+
+    print("\nFull system state after COBOL execution:")
+    interp9.display_state()
+
+    state9 = interp9.get_system_state()
+    print("COBOL ECOSYSTEM METRICS")
+    print("="*80)
+    print(f"Total Energy:          {state9['total_system_energy']:.2f} J")
+    print(f"Total Entropy:         {state9['total_system_entropy']:.2f}")
+    print(f"Average Capacity:      {state9['average_capacity']:.4f}")
+    print(f"Average Coherence:     {state9['average_coherence']:.4f}")
+    print(f"Field Count:           {len(interp9.fields)}")
+    print("="*80)
+
+    # Example 10: COBOL inline syntax in Cyclic interpreter
+    print("\n" + "="*80)
+    print("EXAMPLE 10: COBOL INLINE SYNTAX")
+    print("="*80)
+    print("Using COBOL: prefix to execute COBOL verbs directly in Cyclic...")
+
+    interp10 = CyclicalInterpreter()
+    interp10.create_field("server", 150.0, frequency=3.0)
+    interp10.create_field("client", 80.0, frequency=6.0)
+
+    print("\nInitial state:")
+    interp10.display_state()
+
+    print("Executing: COBOL:ENTANGLE server WITH client")
+    interp10.execute("COBOL:ENTANGLE server WITH client")
+
+    print("Executing: COBOL:COMPUTE server = REGENERATE 25")
+    interp10.execute("COBOL:COMPUTE server = REGENERATE 25")
+
+    print("Executing: COBOL:RESONATE server WITH client")
+    interp10.execute("COBOL:RESONATE server WITH client")
+
+    print("Executing: COBOL:DECAY client BY 0.04")
+    interp10.execute("COBOL:DECAY client BY 0.04")
+
+    print("\nAfter COBOL inline operations:")
+    interp10.display_state()
+
+    print("\n🌟 ALL FEATURES DEMONSTRATED SUCCESSFULLY! 🌟\n")
 ```
 
 if **name** == “**main**”:
