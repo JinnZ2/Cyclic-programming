@@ -9,9 +9,12 @@ Cyclic Programming is a novel programming language/paradigm that combines quantu
 ## Repository Structure
 
 ```
-├── cyclic_interpreter.py        # Main interpreter — full feature implementation + COBOL bridge
-├── Cyclic_interpreter.py        # Earlier/simpler interpreter version (338 lines)
+├── cyclic_interpreter.py        # Main interpreter, COBOL bridge, REPL, and CLI
+├── Cyclic_interpreter.py        # Earlier/simpler interpreter version
 ├── epic_demo.py                 # Complete feature showcase with 10 runnable examples
+├── pyproject.toml               # Python packaging config (pip install -e .)
+├── tests/
+│   └── test_interpreter.py      # pytest test suite (40 tests)
 ├── README.md                    # Project overview and quick start
 ├── Specifications.md            # Core language specification and principles
 ├── QUICK_REFERENCE.md           # Syntax quick reference guide
@@ -128,30 +131,76 @@ bridge.execute_cobol(cobol_source_string)
 
 ## Development Workflow
 
-### Running the Project
+### Installation
 
 ```bash
-# Run the feature demo
-python3 epic_demo.py
+# Install in development mode
+pip install -e .
 
-# Use the interpreter directly
-python3 cyclic_interpreter.py
+# Or install with dev dependencies (pytest)
+pip install -e ".[dev]"
 ```
+
+### Running
+
+```bash
+# Interactive REPL
+python3 cyclic_interpreter.py
+# or after pip install:
+cyclic
+
+# Run the built-in demo
+python3 cyclic_interpreter.py --demo
+
+# Execute a single expression
+python3 cyclic_interpreter.py -e "⊗(fieldA, fieldB)"
+
+# Execute a source file (.cyc or .cob)
+python3 cyclic_interpreter.py myprogram.cyc
+
+# Run the full feature showcase
+python3 epic_demo.py
+```
+
+### REPL Commands
+
+| Command | Action |
+|---|---|
+| `create <name> <energy> [freq]` | Create a field |
+| `state` | Show all field states |
+| `fields` | List field names |
+| `reset` | Clear all fields |
+| `cobol` | Enter multi-line COBOL mode (end with `END.`) |
+| `help` | Show available commands and syntax |
+| `quit` / `exit` | Exit |
+
+Any Cyclic expression or `COBOL:VERB` inline command can be typed directly at the `cyclic>` prompt.
 
 ### Dependencies
 
-**None** — pure Python 3 standard library only (`re`, `math`, `typing`, `dataclasses`, `enum`).
+**Runtime:** Pure Python 3.9+ standard library only (`re`, `math`, `typing`, `dataclasses`, `enum`).
+**Dev:** `pytest>=7.0` (optional, for running tests).
 
 ### Testing
 
-No formal test framework. Validation is built into the interpreter:
-- Energy conservation is checked after every operation
-- `epic_demo.py` serves as the integration test suite — all 10 demos (including COBOL) should run without `ConservationViolation` errors
-- Verify output shows energy conservation maintained and entropy increasing
+```bash
+python3 -m pytest tests/ -v
+```
 
-### No Build System / CI
-
-This is a standalone Python project with no build steps, no package manager config, and no CI/CD pipelines.
+40 tests covering:
+- Field creation and state management
+- Energy conservation (bidirectional, directed transfer, spatial gradient)
+- Entropy increase (2nd law)
+- Quantum operations (entanglement, coherence bounding)
+- Resonance (frequency matching, amplification)
+- Phase transitions (state changes, energy cost, insufficient energy)
+- Regeneration, decay, symbiosis
+- Fractal generation
+- Multi-field networks
+- Directed transfer (COBOL MOVE)
+- COBOL bridge (PIC constraints, paragraphs, name normalization)
+- Parser (all expression types)
+- EnergyState dataclass methods
 
 ## Code Conventions
 
@@ -166,7 +215,8 @@ This is a standalone Python project with no build steps, no package manager conf
 ## Important Notes for AI Assistants
 
 - `cyclic_interpreter.py` (lowercase 'c') is the main/current interpreter — `Cyclic_interpreter.py` (uppercase 'C') is an earlier version
-- The `sys.path.insert(0, '/mnt/user-data/outputs')` line in `epic_demo.py` is an artifact of the original development environment; adjust if needed locally
+- The `sys.path.insert(0, '/mnt/user-data/outputs')` line in `epic_demo.py` is an artifact of the original development environment; it can be removed
+- Run `python3 -m pytest tests/ -v` before pushing changes to verify nothing is broken
 - All operations must maintain energy conservation — any new feature must track and preserve total system energy
 - Entropy must never decrease in any operation (thermodynamic validity)
 - When adding new features, follow the existing pattern: add a method to `CyclicalInterpreter`, register any new syntax in the parser regex, and add a demo to `epic_demo.py`
