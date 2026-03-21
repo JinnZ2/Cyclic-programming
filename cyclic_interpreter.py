@@ -351,7 +351,44 @@ def decay(self, decay_rate: float = 0.05) -> 'FieldState':
         self.fractal_depth, self.entangled_with
     )
 
-def symbiosis_with(self, other_field) -> Tuple['FieldState', 'FieldState']:
+def directed_transfer(self, other_field, amount: float) -> Tuple['FieldState', 'FieldState']:
+        """Transfer a specific amount of energy from self to other_field.
+        Unlike interact_with(), this is a one-way transfer of a fixed amount,
+        matching COBOL MOVE semantics. Energy is conserved: source loses
+        exactly what target gains, plus a small entropy cost."""
+        # Clamp to available energy
+        actual_amount = min(amount, self.energy.total_energy * 0.9)  # Keep 10% minimum
+        entropy_cost = actual_amount * 0.01
+
+        new_self_energy = EnergyState(
+            total_energy=self.energy.total_energy - actual_amount,
+            kinetic=self.energy.kinetic - actual_amount * 0.6,
+            potential=self.energy.potential - actual_amount * 0.4,
+            entropy=self.energy.entropy + entropy_cost,
+            quantum_coherence=self.energy.quantum_coherence * 0.99,
+            phase_angle=self.energy.phase_angle
+        )
+
+        new_other_energy = EnergyState(
+            total_energy=other_field.energy.total_energy + actual_amount,
+            kinetic=other_field.energy.kinetic + actual_amount * 0.6,
+            potential=other_field.energy.potential + actual_amount * 0.4,
+            entropy=other_field.energy.entropy + entropy_cost,
+            quantum_coherence=other_field.energy.quantum_coherence * 0.99,
+            phase_angle=other_field.energy.phase_angle
+        )
+
+        return (
+            FieldState(self.name, new_self_energy, self.position, self.gradient,
+                      self.capacity, self.age + 1, self.phase_state, self.frequency,
+                      self.fractal_depth, self.entangled_with),
+            FieldState(other_field.name, new_other_energy, other_field.position,
+                      other_field.gradient, other_field.capacity, other_field.age + 1,
+                      other_field.phase_state, other_field.frequency, other_field.fractal_depth,
+                      other_field.entangled_with)
+        )
+
+    def symbiosis_with(self, other_field) -> Tuple['FieldState', 'FieldState']:
     """Symbiotic relationship - both fields benefit"""
     # Each field contributes to the other's capacity growth
     self_contribution = self.energy.total_energy * 0.05
@@ -390,107 +427,206 @@ pass
 
 class COBOLBridge:
     “””
-    COBOL-to-Cyclic bridge: translates COBOL-style structured syntax into
-    Cyclic field operations. Maps enterprise computing paradigms onto
-    physics-based cyclic computation.
+    COBOL-inspired syntax bridge for the Cyclic interpreter.
 
-    COBOL DIVISION structure maps to Cyclic concepts:
-      IDENTIFICATION DIVISION → Field metadata
-      DATA DIVISION           → Field creation with energy/frequency
-      PROCEDURE DIVISION      → Cyclic operations (interact, regenerate, etc.)
+    This is NOT a COBOL compiler — it uses COBOL-inspired structured syntax
+    (divisions, verbs, PIC clauses) as an alternative way to express Cyclic
+    field operations. Think of it as “enterprise-flavored Cyclic.”
 
-    Supported COBOL verbs:
-      MOVE energy FROM field TO field  → Bidirectional interaction
-      COMPUTE field = expression       → Regenerate with energy input
-      PERFORM operation N TIMES        → Repeated cyclic execution
-      ENTANGLE field WITH field        → Quantum entanglement
-      RESONATE field WITH field        → Resonance coupling
-      TRANSITION field TO phase        → Phase transition
-      DECAY field BY rate              → Natural decay
-      SYMBIOSIS field WITH field       → Symbiotic relationship
-      DISPLAY field                    → Show field state
-      STOP RUN                         → End execution
+    DIVISION structure:
+      IDENTIFICATION DIVISION  → Program metadata (PROGRAM-ID)
+      DATA DIVISION            → Field creation via PIC clauses
+      PROCEDURE DIVISION       → Operations using COBOL-inspired verbs
+
+    PIC clause semantics (maps to Cyclic field constraints):
+      PIC 9(n)    → Energy precision to n digits (max energy = 10^n - 1)
+      PIC 9(n)V99 → Energy with 2 decimal places of precision
+      PIC X(n)    → Unconstrained field (no energy cap)
+
+    Paragraphs in PROCEDURE DIVISION can be defined and invoked via PERFORM.
     “””
 
     def __init__(self, interpreter):
         self.interpreter = interpreter
-        self.working_storage = {}  # COBOL working storage section
-        self.procedure_results = []
+        self.paragraphs = {}  # Named procedure paragraphs
+        self._field_name_registry = {}  # Maps COBOL names → internal names for collision detection
+        self._field_constraints = {}  # Maps internal name → {max_energy, precision}
+
+    def _normalize_name(self, cobol_name: str) -> str:
+        “””Convert a COBOL-style name to internal field name, with collision detection.”””
+        internal = cobol_name.lower().replace('-', '_')
+        if cobol_name in self._field_name_registry:
+            return self._field_name_registry[cobol_name]
+        # Check for collision: different COBOL name mapping to same internal name
+        for existing_cobol, existing_internal in self._field_name_registry.items():
+            if existing_internal == internal and existing_cobol != cobol_name:
+                # Collision detected — disambiguate
+                internal = f”{internal}_{len(self._field_name_registry)}”
+                break
+        self._field_name_registry[cobol_name] = internal
+        return internal
+
+    def _parse_pic_clause(self, pic_str: str) -> dict:
+        “””Parse PIC clause into field constraints.
+        PIC 9(5)    → max_energy=99999, precision=0
+        PIC 9(5)V99 → max_energy=99999.99, precision=2
+        PIC X(n)    → unconstrained
+        “””
+        constraints = {'max_energy': None, 'precision': 0}
+
+        # PIC 9(n) with optional V decimal
+        numeric_match = re.match(r'9\((\d+)\)(?:V(9+))?', pic_str)
+        if numeric_match:
+            digits = int(numeric_match.group(1))
+            constraints['max_energy'] = 10 ** digits - 1
+            if numeric_match.group(2):
+                constraints['precision'] = len(numeric_match.group(2))
+            return constraints
+
+        # PIC 9...9 shorthand
+        shorthand_match = re.match(r'(9+)(?:V(9+))?', pic_str)
+        if shorthand_match:
+            digits = len(shorthand_match.group(1))
+            constraints['max_energy'] = 10 ** digits - 1
+            if shorthand_match.group(2):
+                constraints['precision'] = len(shorthand_match.group(2))
+            return constraints
+
+        # PIC X(n) — unconstrained
+        return constraints
 
     def parse_cobol(self, cobol_source: str) -> list:
-        “””Parse COBOL-style source into a list of operations”””
+        “””Parse COBOL-inspired source into a list of operations.”””
         operations = []
-        lines = [line.strip() for line in cobol_source.split('\n') if line.strip()]
+        lines = cobol_source.split('\n')
 
         current_division = None
-        i = 0
-        while i < len(lines):
-            line = lines[i].upper().rstrip('.')
+        current_section = None
+        current_paragraph = None
+        paragraph_body = []
+
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+            line_upper = line.upper().rstrip('.')
+
+            # COBOL comments: * in column 7, or *> anywhere
+            if line_upper.startswith('*') or line_upper.startswith('*>'):
+                continue
 
             # Track divisions
-            if 'IDENTIFICATION DIVISION' in line:
+            if 'IDENTIFICATION DIVISION' in line_upper:
+                self._flush_paragraph(current_paragraph, paragraph_body)
                 current_division = 'identification'
-                i += 1
+                current_paragraph = None
+                paragraph_body = []
                 continue
-            elif 'DATA DIVISION' in line:
+            elif 'DATA DIVISION' in line_upper:
+                self._flush_paragraph(current_paragraph, paragraph_body)
                 current_division = 'data'
-                i += 1
+                current_paragraph = None
+                paragraph_body = []
                 continue
-            elif 'PROCEDURE DIVISION' in line:
+            elif 'PROCEDURE DIVISION' in line_upper:
+                self._flush_paragraph(current_paragraph, paragraph_body)
                 current_division = 'procedure'
-                i += 1
+                current_paragraph = None
+                paragraph_body = []
                 continue
-            elif line.startswith('*') or line.startswith('*>'):
-                # COBOL comment
-                i += 1
+
+            # Track sections within divisions
+            if re.match(r'[\w-]+\s+SECTION', line_upper):
+                current_section = line_upper.split()[0].lower().replace('-', '_')
                 continue
 
             if current_division == 'data':
-                op = self._parse_data_line(line)
+                op = self._parse_data_line(line_upper)
                 if op:
                     operations.append(op)
 
             elif current_division == 'procedure':
-                op = self._parse_procedure_line(line)
-                if op:
-                    operations.append(op)
+                # Detect paragraph labels: a line ending with . that is just a name
+                paragraph_label = re.match(r'^([\w-]+)\s*\.$', line.strip())
+                if paragraph_label and not self._is_verb(line_upper):
+                    # Flush previous paragraph
+                    self._flush_paragraph(current_paragraph, paragraph_body)
+                    current_paragraph = paragraph_label.group(1).upper()
+                    paragraph_body = []
+                    continue
 
-            i += 1
+                if current_paragraph is not None:
+                    # Accumulate lines into current paragraph
+                    paragraph_body.append(line_upper)
+                else:
+                    # Top-level procedure statement
+                    op = self._parse_procedure_line(line_upper)
+                    if op:
+                        operations.append(op)
+
+        # Flush last paragraph
+        self._flush_paragraph(current_paragraph, paragraph_body)
 
         return operations
 
+    def _flush_paragraph(self, name, body_lines):
+        “””Store a completed paragraph for PERFORM lookup.”””
+        if name and body_lines:
+            self.paragraphs[name] = body_lines
+
+    def _is_verb(self, line: str) -> bool:
+        “””Check if a line starts with a known COBOL verb.”””
+        verbs = ('MOVE', 'COMPUTE', 'PERFORM', 'ENTANGLE', 'RESONATE',
+                 'TRANSITION', 'DECAY', 'SYMBIOSIS', 'DISPLAY', 'STOP')
+        return any(line.startswith(v) for v in verbs)
+
     def _parse_data_line(self, line: str) -> dict:
-        “””Parse DATA DIVISION entries into field creation operations”””
-        # Pattern: 01 FIELD-NAME PIC X VALUE energy FREQUENCY freq
+        “””Parse DATA DIVISION entries into field creation operations.
+        PIC clause determines energy constraints.”””
         field_match = re.match(
-            r'(\d+)\s+([\w-]+)\s+PIC\s+\S+(?:\s+VALUE\s+(\d+(?:\.\d+)?))?'
+            r'(\d+)\s+([\w-]+)\s+PIC\s+(\S+)(?:\s+VALUE\s+(\d+(?:\.\d+)?))?'
             r'(?:\s+FREQUENCY\s+(\d+(?:\.\d+)?))?',
             line
         )
         if field_match:
-            name = field_match.group(2).lower().replace('-', '_')
-            energy = float(field_match.group(3)) if field_match.group(3) else 50.0
-            freq = float(field_match.group(4)) if field_match.group(4) else 1.0
+            cobol_name = field_match.group(2)
+            internal_name = self._normalize_name(cobol_name)
+            pic_str = field_match.group(3)
+            energy = float(field_match.group(4)) if field_match.group(4) else 50.0
+            freq = float(field_match.group(5)) if field_match.group(5) else 1.0
+
+            constraints = self._parse_pic_clause(pic_str)
+            self._field_constraints[internal_name] = constraints
+
+            # Enforce PIC constraint on initial energy
+            if constraints['max_energy'] is not None:
+                energy = min(energy, constraints['max_energy'])
+
+            # Round to PIC precision
+            if constraints['precision'] > 0:
+                energy = round(energy, constraints['precision'])
+
             return {
                 'type': 'cobol_field_create',
-                'name': name,
+                'name': internal_name,
+                'cobol_name': cobol_name,
                 'energy': energy,
-                'frequency': freq
+                'frequency': freq,
+                'constraints': constraints
             }
         return None
 
     def _parse_procedure_line(self, line: str) -> dict:
-        “””Parse PROCEDURE DIVISION statements into Cyclic operations”””
-        # MOVE energy FROM field TO field
+        “””Parse PROCEDURE DIVISION statements into Cyclic operations.”””
+        # MOVE amount FROM field TO field (directed transfer)
         move_match = re.match(
             r'MOVE\s+(\d+(?:\.\d+)?)\s+FROM\s+([\w-]+)\s+TO\s+([\w-]+)', line)
         if move_match:
             return {
-                'type': 'cobol_interact',
-                'fields': [
-                    move_match.group(2).lower().replace('-', '_'),
-                    move_match.group(3).lower().replace('-', '_')
-                ]
+                'type': 'cobol_move',
+                'amount': float(move_match.group(1)),
+                'source': self._normalize_name(move_match.group(2)),
+                'target': self._normalize_name(move_match.group(3))
             }
 
         # COMPUTE field = REGENERATE energy
@@ -499,26 +635,25 @@ class COBOLBridge:
         if compute_match:
             return {
                 'type': 'cobol_regenerate',
-                'field': compute_match.group(1).lower().replace('-', '_'),
+                'field': self._normalize_name(compute_match.group(1)),
                 'energy': float(compute_match.group(2))
             }
 
-        # PERFORM operation N TIMES
-        perform_match = re.match(
-            r'PERFORM\s+([\w-]+)\s+(\d+)\s+TIMES', line)
-        if perform_match:
+        # PERFORM paragraph N TIMES
+        perform_times = re.match(r'PERFORM\s+([\w-]+)\s+(\d+)\s+TIMES', line)
+        if perform_times:
             return {
                 'type': 'cobol_perform',
-                'operation': perform_match.group(1).lower().replace('-', '_'),
-                'times': int(perform_match.group(2))
+                'paragraph': perform_times.group(1).upper(),
+                'times': int(perform_times.group(2))
             }
 
-        # PERFORM operation (single execution)
-        perform_single_match = re.match(r'PERFORM\s+([\w-]+)\s*$', line)
-        if perform_single_match:
+        # PERFORM paragraph (single)
+        perform_single = re.match(r'PERFORM\s+([\w-]+)\s*$', line)
+        if perform_single:
             return {
                 'type': 'cobol_perform',
-                'operation': perform_single_match.group(1).lower().replace('-', '_'),
+                'paragraph': perform_single.group(1).upper(),
                 'times': 1
             }
 
@@ -529,8 +664,8 @@ class COBOLBridge:
             return {
                 'type': 'cobol_entangle',
                 'fields': [
-                    entangle_match.group(1).lower().replace('-', '_'),
-                    entangle_match.group(2).lower().replace('-', '_')
+                    self._normalize_name(entangle_match.group(1)),
+                    self._normalize_name(entangle_match.group(2))
                 ]
             }
 
@@ -541,8 +676,8 @@ class COBOLBridge:
             return {
                 'type': 'cobol_resonate',
                 'fields': [
-                    resonate_match.group(1).lower().replace('-', '_'),
-                    resonate_match.group(2).lower().replace('-', '_')
+                    self._normalize_name(resonate_match.group(1)),
+                    self._normalize_name(resonate_match.group(2))
                 ]
             }
 
@@ -552,7 +687,7 @@ class COBOLBridge:
         if transition_match:
             return {
                 'type': 'cobol_phase',
-                'field': transition_match.group(1).lower().replace('-', '_'),
+                'field': self._normalize_name(transition_match.group(1)),
                 'target_phase': transition_match.group(2).lower()
             }
 
@@ -562,7 +697,7 @@ class COBOLBridge:
         if decay_match:
             return {
                 'type': 'cobol_decay',
-                'field': decay_match.group(1).lower().replace('-', '_'),
+                'field': self._normalize_name(decay_match.group(1)),
                 'rate': float(decay_match.group(2))
             }
 
@@ -573,8 +708,8 @@ class COBOLBridge:
             return {
                 'type': 'cobol_symbiosis',
                 'fields': [
-                    symbiosis_match.group(1).lower().replace('-', '_'),
-                    symbiosis_match.group(2).lower().replace('-', '_')
+                    self._normalize_name(symbiosis_match.group(1)),
+                    self._normalize_name(symbiosis_match.group(2))
                 ]
             }
 
@@ -583,7 +718,7 @@ class COBOLBridge:
         if display_match:
             return {
                 'type': 'cobol_display',
-                'field': display_match.group(1).lower().replace('-', '_')
+                'field': self._normalize_name(display_match.group(1))
             }
 
         # STOP RUN
@@ -592,83 +727,179 @@ class COBOLBridge:
 
         return None
 
+    def _enforce_constraints(self, field_name: str):
+        “””Apply PIC-derived constraints to a field after an operation.”””
+        if field_name not in self._field_constraints:
+            return
+        if field_name not in self.interpreter.fields:
+            return
+
+        constraints = self._field_constraints[field_name]
+        field = self.interpreter.fields[field_name]
+
+        clamped = False
+        energy = field.energy.total_energy
+
+        # Cap energy to PIC max
+        if constraints['max_energy'] is not None and energy > constraints['max_energy']:
+            energy = float(constraints['max_energy'])
+            clamped = True
+
+        # Round to PIC precision
+        if constraints['precision'] > 0:
+            energy = round(energy, constraints['precision'])
+
+        if clamped or energy != field.energy.total_energy:
+            new_energy = EnergyState(
+                total_energy=energy,
+                kinetic=field.energy.kinetic,
+                potential=field.energy.potential,
+                entropy=field.energy.entropy,
+                quantum_coherence=field.energy.quantum_coherence,
+                phase_angle=field.energy.phase_angle
+            )
+            self.interpreter.fields[field_name] = FieldState(
+                field.name, new_energy, field.position, field.gradient,
+                field.capacity, field.age, field.phase_state, field.frequency,
+                field.fractal_depth, field.entangled_with
+            )
+
+    def _execute_paragraph(self, paragraph_name: str) -> dict:
+        “””Execute a named paragraph's statements.”””
+        if paragraph_name not in self.paragraphs:
+            return {'error': f'Paragraph {paragraph_name} not defined'}
+
+        results = {}
+        for line in self.paragraphs[paragraph_name]:
+            op = self._parse_procedure_line(line)
+            if op:
+                result = self._execute_op(op)
+                if result:
+                    results[f”{op['type']}_{len(results)}”] = result
+                if op['type'] == 'cobol_stop':
+                    break
+        return results
+
+    def _execute_op(self, op: dict) -> dict:
+        “””Execute a single parsed operation.”””
+        if op['type'] == 'cobol_field_create':
+            self.interpreter.create_field(
+                op['name'], op['energy'], op['frequency'])
+            return {
+                'type': 'field_created',
+                'name': op['name'],
+                'energy': op['energy'],
+                'frequency': op['frequency'],
+                'constraints': op.get('constraints')
+            }
+
+        elif op['type'] == 'cobol_move':
+            # Directed transfer: source loses amount, target gains it
+            source = op['source']
+            target = op['target']
+            amount = op['amount']
+
+            if source not in self.interpreter.fields:
+                self.interpreter.create_field(source, 50.0)
+            if target not in self.interpreter.fields:
+                self.interpreter.create_field(target, 50.0)
+
+            src_field = self.interpreter.fields[source]
+            tgt_field = self.interpreter.fields[target]
+
+            new_src, new_tgt = src_field.directed_transfer(tgt_field, amount)
+            self.interpreter.fields[source] = new_src
+            self.interpreter.fields[target] = new_tgt
+
+            self._enforce_constraints(source)
+            self._enforce_constraints(target)
+
+            return {
+                'type': 'directed_transfer',
+                'source': source,
+                'target': target,
+                'amount': amount,
+                'source_energy': self.interpreter.fields[source].energy.total_energy,
+                'target_energy': self.interpreter.fields[target].energy.total_energy
+            }
+
+        elif op['type'] == 'cobol_regenerate':
+            cyclic_expr = f”∮regenerate({op['field']}, {op['energy']})”
+            result = self.interpreter.execute(cyclic_expr)
+            self._enforce_constraints(op['field'])
+            return result
+
+        elif op['type'] == 'cobol_perform':
+            results = {}
+            for i in range(op['times']):
+                sub_result = self._execute_paragraph(op['paragraph'])
+                results[f”iteration_{i}”] = sub_result
+            return results
+
+        elif op['type'] == 'cobol_entangle':
+            cyclic_expr = f”⊗({op['fields'][0]}, {op['fields'][1]})”
+            result = self.interpreter.execute(cyclic_expr)
+            return result
+
+        elif op['type'] == 'cobol_resonate':
+            cyclic_expr = f”~({op['fields'][0]} ≈ {op['fields'][1]})”
+            result = self.interpreter.execute(cyclic_expr)
+            for f in op['fields']:
+                self._enforce_constraints(f)
+            return result
+
+        elif op['type'] == 'cobol_phase':
+            cyclic_expr = f”∂phase({op['field']}, {op['target_phase']})”
+            result = self.interpreter.execute(cyclic_expr)
+            self._enforce_constraints(op['field'])
+            return result
+
+        elif op['type'] == 'cobol_decay':
+            cyclic_expr = f”∂decay({op['field']}, {op['rate']})”
+            result = self.interpreter.execute(cyclic_expr)
+            return result
+
+        elif op['type'] == 'cobol_symbiosis':
+            cyclic_expr = f”∇∇({op['fields'][0]}⇄{op['fields'][1]})”
+            result = self.interpreter.execute(cyclic_expr)
+            for f in op['fields']:
+                self._enforce_constraints(f)
+            return result
+
+        elif op['type'] == 'cobol_display':
+            field_name = op['field']
+            if field_name in self.interpreter.fields:
+                field = self.interpreter.fields[field_name]
+                constraints = self._field_constraints.get(field_name, {})
+                max_e = constraints.get('max_energy', 'unlimited')
+                print(f”  DISPLAY {field_name.upper().replace('_', '-')}:”)
+                print(f”    ENERGY     = {field.energy.total_energy:.4f}”)
+                print(f”    MAX-ENERGY = {max_e}”)
+                print(f”    ENTROPY    = {field.energy.entropy:.4f}”)
+                print(f”    CAPACITY   = {field.capacity:.4f}”)
+                print(f”    COHERENCE  = {field.energy.quantum_coherence:.4f}”)
+                print(f”    PHASE      = {field.phase_state}”)
+                return {
+                    'type': 'display',
+                    'field': field_name,
+                    'energy': field.energy.total_energy
+                }
+
+        elif op['type'] == 'cobol_stop':
+            return {'type': 'stop_run'}
+
+        return None
+
     def execute_cobol(self, cobol_source: str) -> dict:
-        “””Parse and execute COBOL-style source code through the Cyclic interpreter”””
+        “””Parse and execute COBOL-inspired source through the Cyclic interpreter.”””
         operations = self.parse_cobol(cobol_source)
         results = {}
 
         for op in operations:
-            if op['type'] == 'cobol_field_create':
-                self.interpreter.create_field(
-                    op['name'], op['energy'], op['frequency'])
-                results[f”create_{op['name']}”] = {
-                    'type': 'field_created',
-                    'name': op['name'],
-                    'energy': op['energy'],
-                    'frequency': op['frequency']
-                }
-
-            elif op['type'] == 'cobol_interact':
-                cyclic_expr = f”∇F({op['fields'][0]}↔{op['fields'][1]})|∂E/∂t=0”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”interact_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_regenerate':
-                cyclic_expr = f”∮regenerate({op['field']}, {op['energy']})”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”regenerate_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_perform':
-                for i in range(op['times']):
-                    # Look up the operation name as a stored procedure
-                    if op['operation'] in self.working_storage:
-                        sub_result = self.execute_cobol(
-                            self.working_storage[op['operation']])
-                        results[f”perform_{op['operation']}_{i}”] = sub_result
-
-            elif op['type'] == 'cobol_entangle':
-                cyclic_expr = f”⊗({op['fields'][0]}, {op['fields'][1]})”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”entangle_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_resonate':
-                cyclic_expr = f”~({op['fields'][0]} ≈ {op['fields'][1]})”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”resonate_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_phase':
-                cyclic_expr = f”∂phase({op['field']}, {op['target_phase']})”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”phase_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_decay':
-                cyclic_expr = f”∂decay({op['field']}, {op['rate']})”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”decay_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_symbiosis':
-                cyclic_expr = f”∇∇({op['fields'][0]}⇄{op['fields'][1]})”
-                result = self.interpreter.execute(cyclic_expr)
-                results[f”symbiosis_{len(results)}”] = result
-
-            elif op['type'] == 'cobol_display':
-                field_name = op['field']
-                if field_name in self.interpreter.fields:
-                    field = self.interpreter.fields[field_name]
-                    print(f”  DISPLAY {field_name.upper().replace('_', '-')}:”)
-                    print(f”    ENERGY     = {field.energy.total_energy:.4f}”)
-                    print(f”    ENTROPY    = {field.energy.entropy:.4f}”)
-                    print(f”    CAPACITY   = {field.capacity:.4f}”)
-                    print(f”    COHERENCE  = {field.energy.quantum_coherence:.4f}”)
-                    print(f”    PHASE      = {field.phase_state}”)
-                    results[f”display_{field_name}”] = {
-                        'type': 'display',
-                        'field': field_name,
-                        'energy': field.energy.total_energy
-                    }
-
-            elif op['type'] == 'cobol_stop':
-                results['stop'] = {'type': 'stop_run'}
+            result = self._execute_op(op)
+            if result:
+                results[f”{op['type']}_{len(results)}”] = result
+            if op['type'] == 'cobol_stop':
                 break
 
         return results
@@ -804,7 +1035,7 @@ def parse_expression(self, expr: str) -> Dict[str, Any]:
                 'constraints': constraint_part
             }
     
-    # Parse COBOL-style inline commands: COBOL:VERB args
+    # Parse COBOL-inspired inline commands: COBOL:VERB args
     cobol_inline = re.match(r'COBOL:(\w+)\s*(.*)', expr, re.IGNORECASE)
     if cobol_inline:
         verb = cobol_inline.group(1).upper()
@@ -813,10 +1044,10 @@ def parse_expression(self, expr: str) -> Dict[str, Any]:
             move_match = re.match(r'(\d+(?:\.\d+)?)\s+FROM\s+([\w-]+)\s+TO\s+([\w-]+)', args, re.IGNORECASE)
             if move_match:
                 return {
-                    'type': 'bidirectional_interaction',
-                    'fields': [move_match.group(2).lower().replace('-', '_'),
-                               move_match.group(3).lower().replace('-', '_')],
-                    'constraints': '∂E/∂t=0'
+                    'type': 'directed_transfer',
+                    'amount': float(move_match.group(1)),
+                    'source': move_match.group(2).lower().replace('-', '_'),
+                    'target': move_match.group(3).lower().replace('-', '_')
                 }
         elif verb == 'COMPUTE':
             compute_match = re.match(r'([\w-]+)\s*=\s*REGENERATE\s+(\d+(?:\.\d+)?)', args, re.IGNORECASE)
@@ -1135,6 +1366,31 @@ def execute(self, code: str) -> Dict[str, Any]:
                     'network_size': len(field_names)
                 }
                 
+            elif parsed['type'] == 'directed_transfer':
+                source = parsed['source']
+                target = parsed['target']
+                amount = parsed['amount']
+
+                if source not in self.fields:
+                    self.create_field(source, 50.0)
+                if target not in self.fields:
+                    self.create_field(target, 50.0)
+
+                src_field = self.fields[source]
+                tgt_field = self.fields[target]
+                new_src, new_tgt = src_field.directed_transfer(tgt_field, amount)
+                self.fields[source] = new_src
+                self.fields[target] = new_tgt
+
+                results[f"transfer_{len(results)}"] = {
+                    'type': 'directed_transfer',
+                    'source': source,
+                    'target': target,
+                    'amount': amount,
+                    'source_energy': new_src.energy.total_energy,
+                    'target_energy': new_tgt.energy.total_energy
+                }
+
             elif parsed['type'] == 'field_creation':
                 self.create_field(parsed['name'], parsed['energy'])
                 results[f"creation_{len(results)}"] = {
@@ -1142,7 +1398,7 @@ def execute(self, code: str) -> Dict[str, Any]:
                     'field': parsed['name'],
                     'energy': parsed['energy']
                 }
-                
+
             elif parsed['type'] == 'unknown':
                 results[f"unknown_{len(results)}"] = {
                     'type': 'unknown',

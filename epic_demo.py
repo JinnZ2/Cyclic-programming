@@ -22,8 +22,8 @@ print(”  ✓ Multi-Field Networks”)
 print(”  ✓ Regenerative Cycles”)
 print(”  ✓ Natural Decay”)
 print(“  ✓ Symbiotic Relationships”)
-print(“  ✓ COBOL Ecosystem Bridge”)
-print(“  ✓ COBOL Inline Syntax”)
+print(“  ✓ COBOL-Inspired Ecosystem Bridge”)
+print(“  ✓ COBOL-Inspired Inline Syntax”)
 print(“=”*80)
 
 ```
@@ -252,9 +252,10 @@ print("="*80)
 
     # Example 9: COBOL Ecosystem
     print("\n" + "="*80)
-    print("EXAMPLE 9: COBOL ECOSYSTEM - ENTERPRISE MEETS PHYSICS")
+    print("EXAMPLE 9: COBOL-INSPIRED ECOSYSTEM - ENTERPRISE MEETS PHYSICS")
     print("="*80)
-    print("Running a cyclic ecosystem defined entirely in COBOL syntax...")
+    print("Running a cyclic ecosystem using COBOL-inspired syntax...")
+    print("Features: PIC constraints, PERFORM paragraphs, directed MOVE")
 
     cobol_program = """
        IDENTIFICATION DIVISION.
@@ -262,42 +263,46 @@ print("="*80)
 
        DATA DIVISION.
        WORKING-STORAGE SECTION.
-       01 MAINFRAME PIC 9(5) VALUE 200 FREQUENCY 2.0.
+       *> PIC 9(3) caps energy at 999, PIC 9(5) caps at 99999
+       01 MAINFRAME PIC 9(3) VALUE 200 FREQUENCY 2.0.
        01 DATABASE PIC 9(5) VALUE 120 FREQUENCY 3.0.
-       01 NETWORK PIC 9(5) VALUE 80 FREQUENCY 5.0.
-       01 TERMINAL PIC 9(5) VALUE 50 FREQUENCY 7.0.
+       01 NETWORK PIC 9(3)V99 VALUE 80 FREQUENCY 5.0.
+       01 TERMINAL PIC 9(3) VALUE 50 FREQUENCY 7.0.
 
        PROCEDURE DIVISION.
-       *> Enterprise energy exchange
-       MOVE 10 FROM MAINFRAME TO DATABASE.
-       MOVE 5 FROM DATABASE TO NETWORK.
 
-       *> Quantum-link the mainframe and database
-       ENTANGLE MAINFRAME WITH DATABASE.
+       *> Define reusable paragraphs for PERFORM
+       BOOST-NETWORK.
+           COMPUTE NETWORK = REGENERATE 15.
+           SYMBIOSIS TERMINAL WITH NETWORK.
 
-       *> Regenerate network capacity
-       COMPUTE NETWORK = REGENERATE 30.
-       COMPUTE TERMINAL = REGENERATE 15.
+       MAIN-LOGIC.
+           *> Directed energy transfer (MOVE transfers exact amount)
+           MOVE 10 FROM MAINFRAME TO DATABASE.
+           MOVE 5 FROM DATABASE TO NETWORK.
 
-       *> Resonate database and network (harmonic sync)
-       RESONATE DATABASE WITH NETWORK.
+           *> Quantum-link the mainframe and database
+           ENTANGLE MAINFRAME WITH DATABASE.
 
-       *> Terminal-network symbiosis
-       SYMBIOSIS TERMINAL WITH NETWORK.
+           *> Run the BOOST-NETWORK paragraph 2 times
+           PERFORM BOOST-NETWORK 2 TIMES.
 
-       *> Mainframe natural decay over time
-       DECAY MAINFRAME BY 0.03.
+           *> Resonate database and network (harmonic sync)
+           RESONATE DATABASE WITH NETWORK.
 
-       *> Phase transition: terminal goes plasma (high performance)
-       TRANSITION TERMINAL TO GAS.
+           *> Mainframe natural decay over time
+           DECAY MAINFRAME BY 0.03.
 
-       *> Display final state
-       DISPLAY MAINFRAME.
-       DISPLAY DATABASE.
-       DISPLAY NETWORK.
-       DISPLAY TERMINAL.
+           *> Phase transition: terminal goes to gas phase
+           TRANSITION TERMINAL TO GAS.
 
-       STOP RUN.
+           *> Display shows PIC constraints (MAX-ENERGY)
+           DISPLAY MAINFRAME.
+           DISPLAY DATABASE.
+           DISPLAY NETWORK.
+           DISPLAY TERMINAL.
+
+           STOP RUN.
     """
 
     interp9 = CyclicalInterpreter()
@@ -325,7 +330,7 @@ print("="*80)
     print("\n" + "="*80)
     print("EXAMPLE 10: COBOL INLINE SYNTAX")
     print("="*80)
-    print("Using COBOL: prefix to execute COBOL verbs directly in Cyclic...")
+    print("Using COBOL: prefix to execute COBOL-inspired verbs directly in Cyclic...")
 
     interp10 = CyclicalInterpreter()
     interp10.create_field("server", 150.0, frequency=3.0)
@@ -333,6 +338,9 @@ print("="*80)
 
     print("\nInitial state:")
     interp10.display_state()
+
+    print("Executing: COBOL:MOVE 20 FROM server TO client (directed transfer)")
+    interp10.execute("COBOL:MOVE 20 FROM server TO client")
 
     print("Executing: COBOL:ENTANGLE server WITH client")
     interp10.execute("COBOL:ENTANGLE server WITH client")

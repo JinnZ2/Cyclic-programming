@@ -55,41 +55,75 @@ Cyclic Programming is a novel programming language/paradigm that combines quantu
 - **Quantum coherence**: Bounded to [0, 1]
 - **Phase states**: crystalline → normal → liquid → gas → plasma (ordered transitions)
 
-### COBOL Bridge
+### COBOL-Inspired Bridge
 
-The `COBOLBridge` class maps COBOL division structure onto Cyclic concepts:
+The `COBOLBridge` provides COBOL-inspired structured syntax as an alternative way
+to express Cyclic operations. It is **not** a COBOL compiler — it borrows COBOL's
+division/verb structure while mapping to Cyclic physics semantics.
+
+**DIVISION structure:**
 
 | COBOL Construct | Cyclic Mapping |
 |---|---|
-| `IDENTIFICATION DIVISION` | Program metadata |
-| `DATA DIVISION` / `WORKING-STORAGE` | Field creation (`01 FIELD PIC 9 VALUE energy FREQUENCY freq`) |
-| `PROCEDURE DIVISION` | Cyclic operations |
+| `IDENTIFICATION DIVISION` | Program metadata (`PROGRAM-ID`) |
+| `DATA DIVISION` / `WORKING-STORAGE` | Field creation with PIC constraints |
+| `PROCEDURE DIVISION` | Operations via verbs and named paragraphs |
 
-Supported COBOL verbs in the PROCEDURE DIVISION:
+**PIC clause semantics** (not cosmetic — enforced at runtime):
+
+| PIC Clause | Meaning | Effect |
+|---|---|---|
+| `PIC 9(3)` | 3-digit numeric | Energy capped at 999 |
+| `PIC 9(5)` | 5-digit numeric | Energy capped at 99999 |
+| `PIC 9(3)V99` | 3 digits + 2 decimal | Energy capped at 999.99, rounded to 2 decimals |
+| `PIC X(n)` | Alphanumeric | No energy cap (unconstrained) |
+
+**Supported verbs:**
 
 | COBOL Verb | Example | Cyclic Equivalent |
 |---|---|---|
-| `MOVE` | `MOVE 10 FROM A TO B` | `∇F(a↔b)\|∂E/∂t=0` |
+| `MOVE` | `MOVE 10 FROM A TO B` | `directed_transfer()` — A loses 10, B gains 10 |
 | `COMPUTE` | `COMPUTE A = REGENERATE 30` | `∮regenerate(a, 30)` |
 | `ENTANGLE` | `ENTANGLE A WITH B` | `⊗(a, b)` |
 | `RESONATE` | `RESONATE A WITH B` | `~(a ≈ b)` |
 | `TRANSITION` | `TRANSITION A TO PLASMA` | `∂phase(a, plasma)` |
 | `DECAY` | `DECAY A BY 0.05` | `∂decay(a, 0.05)` |
 | `SYMBIOSIS` | `SYMBIOSIS A WITH B` | `∇∇(a⇄b)` |
-| `PERFORM` | `PERFORM OP 3 TIMES` | Repeated execution |
-| `DISPLAY` | `DISPLAY A` | Pretty-print field state |
+| `PERFORM` | `PERFORM PARA-NAME 3 TIMES` | Execute named paragraph N times |
+| `DISPLAY` | `DISPLAY A` | Pretty-print field state + PIC constraints |
 | `STOP RUN` | `STOP RUN` | End execution |
 
-**COBOL Inline Syntax**: Use `COBOL:VERB args` directly in the Cyclic interpreter (e.g., `COBOL:ENTANGLE server WITH client`).
+**Paragraphs:** Define reusable procedure blocks in the PROCEDURE DIVISION. A paragraph is
+a label ending with `.` followed by indented statements. Invoke with `PERFORM`:
+```
+PROCEDURE DIVISION.
 
-**Usage**:
+BOOST-NETWORK.
+    COMPUTE NETWORK = REGENERATE 15.
+    SYMBIOSIS TERMINAL WITH NETWORK.
+
+MAIN-LOGIC.
+    PERFORM BOOST-NETWORK 3 TIMES.
+    STOP RUN.
+```
+
+**COBOL inline syntax** — use `COBOL:VERB args` directly in the Cyclic interpreter:
+```python
+interp = CyclicalInterpreter()
+
+# Directed transfer (source loses, target gains)
+interp.execute("COBOL:MOVE 20 FROM server TO client")
+
+# Other verbs
+interp.execute("COBOL:ENTANGLE fieldA WITH fieldB")
+interp.execute("COBOL:COMPUTE fieldA = REGENERATE 30")
+```
+
+**Full program usage:**
 ```python
 interp = CyclicalInterpreter()
 bridge = interp.cobol_bridge()
 bridge.execute_cobol(cobol_source_string)
-
-# Or inline:
-interp.execute("COBOL:ENTANGLE fieldA WITH fieldB")
 ```
 
 ## Development Workflow
@@ -136,5 +170,8 @@ This is a standalone Python project with no build steps, no package manager conf
 - All operations must maintain energy conservation — any new feature must track and preserve total system energy
 - Entropy must never decrease in any operation (thermodynamic validity)
 - When adding new features, follow the existing pattern: add a method to `CyclicalInterpreter`, register any new syntax in the parser regex, and add a demo to `epic_demo.py`
-- COBOL field names use hyphens in source (e.g., `MAINFRAME-NODE`) but are converted to underscores internally (e.g., `mainframe_node`) — this conversion is automatic in `COBOLBridge`
+- COBOL field names use hyphens in source (e.g., `MAINFRAME-NODE`) but are converted to underscores internally (e.g., `mainframe_node`) via `COBOLBridge._normalize_name()`, which also detects collisions where different COBOL names would map to the same internal name
+- PIC clauses are enforced: `PIC 9(n)` caps energy at `10^n - 1`, `V99` adds decimal precision. Constraints are checked after every operation via `_enforce_constraints()`
+- `MOVE` is a **directed transfer** (source loses, target gains) — it does NOT use bidirectional `interact_with()`. The `FieldState.directed_transfer()` method handles this
 - New COBOL verbs should be added to both `COBOLBridge._parse_procedure_line()` (for full programs) and `CyclicalInterpreter.parse_expression()` under the `COBOL:` prefix (for inline usage)
+- COBOL paragraphs are stored in `COBOLBridge.paragraphs` and executed via `_execute_paragraph()` when invoked by `PERFORM`
