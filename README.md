@@ -341,6 +341,12 @@ All features working, tested, and documented
 
 -----
 
+## Related Projects
+
+- [Geometric-to-Binary Computational Bridge](https://github.com/JinnZ2/Geometric-to-Binary-Computational-Bridge) — Bridges geometric representations and binary computation, complementing Cyclic Programming's physics-based paradigm.
+
+-----
+
 ## 🔮 Future Vision
 
 This language is a **stepping stone** toward:
