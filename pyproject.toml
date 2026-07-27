@@ -5,7 +5,7 @@ build-backend = "setuptools.backends._legacy:_Backend"
 [project]
 name = "cyclic-programming"
 version = "0.1.0"
-description = "A programming language combining quantum mechanics, thermodynamics, and field theory"
+description = "An energy-accounting interpreter and a cascade model for when repair stops being worth it"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"

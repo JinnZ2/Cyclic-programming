@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-EPIC DEMO - ALL FEATURES
-Cyclical Programming Language - Complete Feature Showcase
+Runnable examples for every interpreter feature.
+
+Each example prints the expression it runs and the resulting field state, so
+the output doubles as a reference for the syntax.
 """
 
-import sys
-sys.path.insert(0, '/mnt/user-data/outputs')
-from cyclical_interpreter import CyclicalInterpreter, COBOLBridge
+from cyclic_interpreter import CyclicalInterpreter, COBOLBridge
 
-def epic_demo():
+def main():
     print("="*80)
-    print("CYCLICAL PROGRAMMING LANGUAGE - COMPLETE FEATURE SHOWCASE")
+    print("CYCLIC PROGRAMMING - FEATURE EXAMPLES")
     print("="*80)
-    print("\nDemonstrating:")
+    print("\nCovering:")
     print("  ✓ Quantum Entanglement")
     print("  ✓ Resonance & Harmonics")
     print("  ✓ Phase Transitions")
@@ -174,7 +174,7 @@ def epic_demo():
 
     # Example 8: Complete Ecosystem with ALL Features
     print("\n" + "="*80)
-    print("EXAMPLE 8: ULTIMATE ECOSYSTEM - ALL FEATURES COMBINED")
+    print("EXAMPLE 8: COMBINED ECOSYSTEM")
     print("="*80)
     print("Simulating a complete quantum-resonant regenerative ecosystem...")
 
@@ -356,7 +356,7 @@ def epic_demo():
     print("\nAfter COBOL inline operations:")
     interp10.display_state()
 
-    print("\n🌟 ALL FEATURES DEMONSTRATED SUCCESSFULLY! 🌟\n")
+    print("\nAll examples completed.\n")
 
 if __name__ == "__main__":
-    epic_demo()
+    main()

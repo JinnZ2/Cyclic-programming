@@ -330,12 +330,11 @@ Awareness emerges through interaction:
 ## 📁 File Structure
 
 ```
-/mnt/user-data/outputs/
-├── cyclical_interpreter.py        # Core interpreter (1000+ lines)
-├── cyclical_language_spec.md      # Original specification
-├── cyclical_language_expanded.md  # Feature documentation
-├── epic_demo.py                   # Complete feature showcase
-└── cyclical_language_complete.md  # This file
+cyclic_interpreter.py           # Core interpreter
+Specifications.md               # Language specification
+Expanded.md                     # Feature documentation
+demo.py                         # Every feature, with output
+Cyclic_language_complete.md     # This file
 ```
 
 -----
