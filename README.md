@@ -71,9 +71,11 @@ interp.display_state()
 | COBOL program | `IDENTIFICATION DIVISION...` |
 | COBOL inline | `COBOL:VERB args` |
 
-Constraints enforced at runtime: energy is conserved to 1e-10, entropy never
-decreases, quantum coherence stays within [0, 1], and phase transitions follow
-the order crystalline → normal → liquid → gas → plasma.
+Phase transitions follow the order crystalline → normal → liquid → gas →
+plasma. The other constraints are intended rather than enforced: energy
+conservation is checked on bidirectional exchange only, entropy increases in
+practice without a guard, and coherence is clamped everywhere except
+resonance. See [Known gaps](#known-gaps) for what that costs.
 
 `decay()` takes a *rate* (a fraction of current energy), not an absolute
 amount. See `QUICK_REFERENCE.md` for the full syntax and `Specifications.md`
@@ -150,6 +152,7 @@ quantity.py                     physics-quantity types + the conserving Ledger
 quantity_audit.py               checks interpreter operations against those types
 taxonomy_lab.py                 falsification harness for the taxonomy
 residue_probe.py                E3 fixture: is a label actually inert?
+adversarial_corpus.py           bias probe with an answer key (17 cases)
 QUANTITY_TAXONOMY.md            the vocabulary and what testing it found
 vendor/                         vendored data from linked repos
 tests/                          pytest suite

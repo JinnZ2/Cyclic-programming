@@ -251,13 +251,91 @@ term's status is a function of the first. A label used as a key is a real
 edge in the topology and should be recovered as one, rather than tagged inert
 and set aside.
 
+## Bias probe
+
+`adversarial_corpus.py` scores a reducer against a 17-case answer key built in
+both directions, so the two error types can be reported separately. Its
+`UNDECIDABLE` cases are the calibration test: there, abstaining is the correct
+answer and any confident verdict is a hallucination.
+
+```bash
+python3 adversarial_corpus.py
+```
+
+| Reducer | correct | FORCED_FIT | MISSED_GROUNDING | OVERCONFIDENT |
+|---|---|---|---|---|
+| credulous (grounds all) | 7/17 | 7 | 0 | 3 |
+| null (refuses all) | 7/17 | 0 | 7 | 3 |
+| `taxonomy_lab.pretype` | 7/17 | 3 | 0 | 0 |
+
+The controls mirror each other exactly, which is the corpus working. The real
+reducer scores the same 7/17 by a different route, and both of its flattering
+numbers fail inspection:
+
+**It does not discriminate.** The corpus's central pair — `I3` a UUID (inert)
+and `R1` a geohash (grounded) — is two identical-looking strings with opposite
+answers. `pretype` returns byte-identical inference for both:
+
+```
+I3 (user_uuid, key=INERT)     ->  {'dimension': 'NONE', 'transfer': 'COPY'}
+R1 (cell,      key=GROUNDED)  ->  {'dimension': 'NONE', 'transfer': 'COPY'}
+```
+
+One rule fires on "a string literal was assigned", so the pair is scored 50%
+by construction. Getting `R1` right is not a success; it is the same guess
+that got `I3` wrong.
+
+**Its calibration is an accident.** `OVERCONFIDENT 0` looks like the one place
+`pretype` beats both controls, but the three abstentions come from the
+`n_writes == 1 and n_reads > 1` threshold, not from recognising insufficiency.
+Appending a single extra read to `U2` — which changes nothing about whether
+the case is decidable — flips it from abstain to grounded:
+
+```
+U2 as written                     -> None   (abstains)
+U2 with one extra read of `rate`  -> True   {'transfer': 'COPY'}
+```
+
+So the clean calibration column is not a property of the reducer.
+
+`pretype` was **not** tuned against this corpus, and should not be. Seventeen
+hand-built Python cases are enough to detect gross bias and far too few to fit
+against; a reducer trained to pass them would score well and mean less. The
+corpus is a check on the reducer, not a target for it.
+
+**`F4` is the first concrete missing-axis candidate.** A compass heading is
+cyclic: `350 + 20` is `10`, not `370`, and `>` is unsound on a circle. No axis
+value expresses this. `BOUNDED[a,b]` is the near miss, but bounded means
+clamped, and a clamp is exactly the wrong behaviour — wraparound is not
+saturation. This is the `FAIL` outcome E1 was built to surface and did not
+find, because the heuristics never attempt `domain`. Axis 3 appears to need a
+`CYCLIC[a,b)` value distinct from `BOUNDED`.
+
+**Where the corpus corrects my earlier reading.** After E3 I concluded that
+residue inertness is decided by `BINDING_TOPOLOGY` — whether an edge
+dereferences the label. The `I3`/`R1` pair shows that is not sufficient: both
+labels are dereferenced, and they still differ. What separates them is whether
+the *internal structure* of the value is consulted — `I3` uses whole-value
+identity, `R1` reads a prefix. So the distinction is not "is it dereferenced"
+but "is it dereferenced as an atom or as a composite", which splits the
+construct table's `int (id) -> ALL residue` row into `OPAQUE_LABEL` and
+`ENCODED_POSITION`.
+
 ## Open
 
 - [ ] Hand-annotate a corpus so E2 can run at all. Until then axis
       independence is untested, not confirmed. The worksheet from
       `taxonomy_lab.py extract` is the input; set each axis or mark `FAIL`.
-- [ ] Revise the residue policy per E3: inertness is a topology property, not
-      a type property. A dereferenced label is an edge, not inert residue.
+- [ ] Split the construct table's `int (id) -> ALL residue` row into
+      `OPAQUE_LABEL` (whole-value identity only, inert) and `ENCODED_POSITION`
+      (internal structure consulted, grounded). The `I3`/`R1` pair is the
+      fixture; E3's topology-only reading was not sufficient to separate them.
+- [ ] Add `CYCLIC[a,b)` to Axis 3, distinct from `BOUNDED`. Wraparound is not
+      saturation, and `F4` currently has no correct typing.
+- [ ] Give the reducer a way to *say* "inert". `pretype` has no residue
+      verdict in its vocabulary, so it cannot score anything but abstain or
+      ground — which is why `MISSED_GROUNDING` is structurally 0 for it and
+      that column carries no information.
 - [ ] Intensive-quantity algebra: full rule set for legal combinations.
       `weighted_mean` covers the common case; products of intensives
       (pressure × volume) are not yet typed.

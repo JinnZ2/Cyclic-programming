@@ -236,3 +236,52 @@ def test_residue_probe_identity_use_survives_permutation():
     # equality and distinctness consult no property of the string, so these
     # are the parts the residue policy correctly describes as inert
     assert residue_probe.identity_only() == {"distinct": 2, "same": False}
+
+
+# --- the adversarial corpus ------------------------------------------------
+
+def test_corpus_controls_are_mirror_images():
+    import adversarial_corpus as AC
+    credulous = AC.score(AC.credulous_reducer, verbose=False)
+    null = AC.score(AC.null_reducer, verbose=False)
+    # the corpus is balanced: forcing everything and refusing everything
+    # must fail by the same amount in opposite directions
+    assert credulous["FORCED_FIT"] == null["MISSED_GROUNDING"]
+    assert credulous["MISSED_GROUNDING"] == null["FORCED_FIT"] == 0
+    # neither control can abstain, so both fail the calibration cases
+    assert credulous["OVERCONFIDENT"] == null["OVERCONFIDENT"] == 3
+
+
+def test_corpus_has_cases_pointing_both_directions():
+    import adversarial_corpus as AC
+    keys = [c.key_grounded for c in AC.CORPUS]
+    assert True in keys and False in keys and None in keys
+
+
+def test_pretype_cannot_tell_a_uuid_from_a_geohash():
+    # the corpus's central pair: same surface type, opposite answers.
+    # pretype fires one rule on "a string was assigned" and so returns
+    # identical inference for both — it scores 50% here by construction
+    import adversarial_corpus as AC
+    by_id = {c.cid: c for c in AC.CORPUS}
+    uuid_axes = AC.pretype_reducer(by_id["I3"].source, "user_uuid").axes
+    geohash_axes = AC.pretype_reducer(by_id["R1"].source, "cell").axes
+    assert uuid_axes == geohash_axes
+    assert by_id["I3"].key_grounded != by_id["R1"].key_grounded
+
+
+def test_pretype_abstention_is_a_read_count_threshold_not_calibration():
+    # OVERCONFIDENT=0 looks like calibration; it is the n_reads>1 cutoff.
+    # one more read of the same name, no change in decidability, flips it
+    import adversarial_corpus as AC
+    u2 = next(c for c in AC.CORPUS if c.cid == "U2")
+    assert AC.pretype_reducer(u2.source, "rate").grounded is None
+    assert AC.pretype_reducer(u2.source + "log(rate)\n", "rate").grounded is True
+
+
+def test_pretype_is_mildly_physics_biased_not_balanced():
+    import adversarial_corpus as AC
+    tally = AC.score(AC.pretype_reducer, verbose=False)
+    assert tally["FORCED_FIT"] > tally["MISSED_GROUNDING"]
+    # it has no residue verdict at all, so it can never miss a grounding
+    assert tally["MISSED_GROUNDING"] == 0

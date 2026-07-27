@@ -27,6 +27,7 @@ This repo holds two things that share one idea — track where capacity goes, an
 ├── quantity_audit.py            # Checks interpreter ops against declared cell types
 ├── taxonomy_lab.py              # Falsification harness (E1 coverage/E2 axes/E3 residue)
 ├── residue_probe.py             # E3 fixture: is a label actually inert?
+├── adversarial_corpus.py        # Bias probe with an answer key (17 cases)
 ├── QUANTITY_TAXONOMY.md         # The vocabulary and what testing it found
 ├── vendor/                      # Vendored data from linked repos
 ├── pyproject.toml               # Python packaging config (pip install -e .)
