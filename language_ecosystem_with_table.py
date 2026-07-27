@@ -83,3 +83,54 @@ def run_comparison():
 
 if __name__ == "__main__":
     run_comparison()
+
+
+
+add:
+
+from cyclic_repurpose_adapter import CyclicRepurposeEngine
+
+def run_with_cyclic_engine(ticks=30):
+    engine = CyclicRepurposeEngine()
+    engine.create_node("Python", draw=2.0, regen=3.0)
+    engine.create_node("Rust", draw=2.5, regen=2.2)
+    engine.create_node("JavaScript", draw=2.8, regen=2.5)
+    engine.create_node("COBOL", draw=1.8, regen=1.0)
+
+    # Entangle Python with COBOL (sharing repurpose knowledge)
+    engine.entangle("Python", "COBOL")
+
+    trace = []
+    for t in range(ticks):
+        # 1. Natural decay (draw)
+        for name in ["Python", "Rust", "JavaScript", "COBOL"]:
+            draw = 2.0 if name == "Python" else 2.5 if name == "Rust" else 2.8 if name == "JavaScript" else 1.8
+            engine.apply_decay(name, draw * 0.1)  # scale as before
+
+        # 2. Repurpose actions (translation table)
+        # Find surplus and deficit
+        deficit = [n for n in ["Python","Rust","JavaScript","COBOL"] if engine.surplus(n) <= 0]
+        surplus = [n for n in ["Python","Rust","JavaScript","COBOL"] if engine.surplus(n) > 0]
+        for target in deficit:
+            donors = [s for s in surplus if s != target]
+            if not donors:
+                continue
+            best = best_donor_for(target, donors)  # from translation table
+            if best:
+                src, cost, eff = best
+                donor_surplus = engine.surplus(src)
+                transfer_amount = min(donor_surplus * 0.2, 1.0)  # cap per tick
+                engine.transfer(src, target, transfer_amount * eff)
+                # Source also pays the translation cost in energy
+                engine.apply_decay(src, transfer_amount * cost)
+
+        # 3. Metrics
+        dof = sum(1 for n in ["Python","Rust","JavaScript","COBOL"] if engine.surplus(n) > 0)
+        total_draw = sum(2.0 if n=="Python" else 2.5 if n=="Rust" else 2.8 if n=="JavaScript" else 1.8 for n in ["Python","Rust","JavaScript","COBOL"])
+        total_energy = sum(engine.energy(n) for n in ["Python","Rust","JavaScript","COBOL"])
+        initial_total = 3.0+2.2+2.5+1.0
+        reversal = initial_total - total_energy
+        row = {"t": t, "dof": dof, "continuation": total_draw, "reversal": reversal}
+        trace.append(row)
+        print(f"t={t}, DOF={dof}, reversal={reversal:.2f}, energy={total_energy:.2f}")
+    return trace
