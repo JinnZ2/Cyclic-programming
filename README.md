@@ -1,408 +1,182 @@
-# 🌟 CYCLICAL PROGRAMMING LANGUAGE - COMPLETE PACKAGE 🌟
+# Cyclic Programming
 
-## What You’ve Created
+An experimental interpreter for a small language whose operations are written
+as energy transfers, plus a cascade model that uses the same accounting to ask
+when a degrading system stops being worth repairing.
 
-A revolutionary programming paradigm that combines **quantum mechanics**, **thermodynamics**, **biology**, and **field theory** into a working computational language where code thinks in cycles, conserves energy, and builds capacity through use.
+Two halves, one idea: track where capacity goes, and never let an operation
+create it from nothing.
 
------
+- **The interpreter** (`cyclic_interpreter.py`) executes expressions written
+  with mathematical operators — `∇F(a↔b)`, `∮regenerate(f, 30)`, `⊗(a, b)`.
+  Every operation conserves total energy to within 1e-10 and never decreases
+  entropy. A COBOL-inspired bridge offers the same operations in a
+  division/verb syntax.
+- **The cascade model** (`harm.py`, `simulator.py`, `repurpose_controller.py`)
+  models nodes that draw down capacity faster than they regenerate, and the
+  cost that displaces onto whatever they are coupled to. It reports when a
+  system crosses the point where continuing is cheaper than reversing.
 
-## 📦 Complete Package Contents
+The two halves meet in `cyclic_repurpose_adapter.py`, which backs the cascade
+model with the interpreter when it is importable and a plain conserving model
+when it is not.
 
-### Core Files
+## Install
 
-1. **cyclical_interpreter.py** (1000+ lines)
-- Full interpreter implementation
-- All 10 major features
-- Energy conservation checking
-- Entropy tracking
-- Quantum operations
-- Field dynamics
-1. **epic_demo.py**
-- Comprehensive feature showcase
-- 8 complete examples
-- Quantum entanglement demo
-- Resonance amplification
-- Phase transitions
-- Fractal generation
-- Spatial gradients
-- Multi-field networks
-- Ultimate ecosystem simulation
-
-### Documentation
-
-1. **cyclical_language_spec.md**
-- Original specification
-- Basic syntax
-- Core principles
-- Energy conservation rules
-1. **cyclical_language_expanded.md**
-- Extended features documentation
-- Regeneration examples
-- Decay processes
-- Symbiotic relationships
-- Ecosystem simulations
-1. **cyclical_language_complete.md**
-- COMPLETE feature matrix
-- All 10 features documented
-- Verified results
-- Physical validation
-- Philosophical implications
-1. **QUICK_REFERENCE.md**
-- Quick syntax guide
-- Common patterns
-- Example combinations
-- Tips and tricks
-1. **README.md** (this file)
-- Package overview
-- Getting started
-- Feature summary
-
------
-
-## ✨ Complete Feature List
-
-### 1. ✅ Bidirectional Exchange
-
-```python
-∇F(field1↔field2)|∂E/∂t=0
-```
-
-- Energy flows both ways
-- Always conserved
-- Entropy increases
-
-### 2. ✅ Regenerative Cycles
-
-```python
-∮regenerate(field, energy)
-```
-
-- 70% work, 30% capacity building
-- Efficiency improves over time
-- Compound growth pattern
-
-### 3. ✅ Natural Decay
-
-```python
-∂decay(field, rate)
-```
-
-- Energy dissipation
-- Entropy increase
-- Capacity degradation
-
-### 4. ✅ Symbiotic Relationships
-
-```python
-∇∇(field1⇄field2)
-```
-
-- Mutual capacity growth
-- Minimal energy cost
-- Frequency entrainment
-
-### 5. ✅ Quantum Entanglement
-
-```python
-⊗(particle1, particle2)
-```
-
-- Non-local correlation
-- Coherence boost (+0.2)
-- Maintains connection
-
-### 6. ✅ Resonance & Harmonics
-
-```python
-~(oscillator1 ≈ oscillator2)
-```
-
-- Frequency matching
-- Energy amplification (up to 20%)
-- Phase locking
-
-### 7. ✅ Phase Transitions
-
-```python
-∂phase(field, target_phase)
-```
-
-- crystalline → normal → liquid → gas → plasma
-- Energy cost scales with transition
-- Entropy increases
-- Coherence changes
-
-### 8. ✅ Fractal Generation
-
-```python
-∮^n(field, depth)
-```
-
-- Self-similar structures
-- 2^depth spawns created
-- Frequency scaling
-- Spatial distribution
-
-### 9. ✅ Spatial Gradients
-
-```python
-∇spatial(field1, field2)
-```
-
-- Position-based flow
-- Distance-dependent rate
-- Gradient tracking
-
-### 10. ✅ Multi-Field Networks
-
-```python
-∇³F(a↔b↔c↔d)|∂E/∂t=0
-```
-
-- 3+ field interactions
-- Combinatorial connections
-- Network topology
-
------
-
-## 🚀 Quick Start
-
-### Run the Demo
+Pure standard library, Python 3.9+. Nothing is required to run it.
 
 ```bash
-cd /mnt/user-data/outputs
-python3 epic_demo.py
+pip install -e .          # optional, provides the `cyclic` entry point
+pip install -e ".[dev]"   # adds pytest
 ```
 
-### Simple Example
+## Run
+
+```bash
+python3 cyclic_interpreter.py            # interactive REPL
+python3 cyclic_interpreter.py --demo     # built-in demo
+python3 cyclic_interpreter.py -e "⊗(a, b)"
+python3 cyclic_interpreter.py prog.cyc   # run a .cyc or .cob file
+python3 demo.py                          # every feature, with output
+```
 
 ```python
-from cyclical_interpreter import CyclicalInterpreter
+from cyclic_interpreter import CyclicalInterpreter
 
-# Create interpreter
 interp = CyclicalInterpreter()
-
-# Create fields
 interp.create_field("sun", 200.0, frequency=1.0)
 interp.create_field("planet", 100.0, frequency=2.0)
 
-# Interact
-interp.execute("∇F(sun↔planet)|∂E/∂t=0")
-
-# Regenerate
-interp.execute("∮regenerate(planet, 30)")
-
-# Resonate
-interp.execute("~(sun ≈ planet)")
-
-# View results
+interp.execute("∇F(sun↔planet)|∂E/∂t=0")   # bidirectional exchange
+interp.execute("∮regenerate(planet, 30)")   # regenerative cycle
+interp.execute("~(sun ≈ planet)")           # resonance
 interp.display_state()
 ```
 
------
+## Language features
 
-## 📊 Verified Results
+| Feature | Syntax |
+|---|---|
+| Bidirectional exchange | `∇F(a↔b)\|∂E/∂t=0` |
+| Regenerative cycle | `∮regenerate(field, E)` |
+| Natural decay | `∂decay(field, rate)` |
+| Symbiosis | `∇∇(a⇄b)` |
+| Quantum entanglement | `⊗(a, b)` |
+| Resonance | `~(a ≈ b)` |
+| Phase transition | `∂phase(field, state)` |
+| Fractal generation | `∮^n(field, depth)` |
+| Spatial gradient | `∇spatial(a, b)` |
+| Multi-field network | `∇³F(a↔b↔c↔d)\|...` |
+| COBOL program | `IDENTIFICATION DIVISION...` |
+| COBOL inline | `COBOL:VERB args` |
 
-### Energy Conservation
+Constraints enforced at runtime: energy is conserved to 1e-10, entropy never
+decreases, quantum coherence stays within [0, 1], and phase transitions follow
+the order crystalline → normal → liquid → gas → plasma.
 
-✅ **100% maintained** across all operations
+`decay()` takes a *rate* (a fraction of current energy), not an absolute
+amount. See `QUICK_REFERENCE.md` for the full syntax and `Specifications.md`
+for the design rationale.
 
-### Entropy (2nd Law)
+## Repurposing
 
-✅ **Always increases** or stays constant
+`harm.read()` takes a snapshot of a coupled system and reports four things:
+per-node imbalance, total induced imbalance at each order outward, whether
+cost is being displaced through couplings, and whether it inflates rather than
+dissipates. It returns numbers, not a verdict.
 
-### Quantum Coherence
+`simulator.run()` makes that dynamical — displaced cost erodes the receiving
+node's regeneration, so deficits compound — and reports the tick at which
+reversal starts outpacing continuation.
 
-✅ **Bounded [0,1]** and tracked properly
+`repurpose_controller.run_with_repurposing()` adds the two things that let a
+system pull out of a cascade: passive recovery, and a finite reserve a
+controller can spend to restore capacity. The reserve is finite and decays, so
+a controller that spends indiscriminately runs dry before the cascade stops.
 
-### Resonance Amplification
+Two worked examples, same arithmetic applied to different domains:
 
-✅ **18% energy gain** demonstrated
-
-### Phase Transitions
-
-✅ **Proper energy costs** and entropy changes
-
-### Fractal Generation
-
-✅ **Self-similar patterns** at multiple scales
-
-### Spatial Gradients
-
-✅ **Distance-based flow** with conservation
-
-### Multi-Field Networks
-
-✅ **Complex topologies** with full interaction
-
------
-
-## 🎯 Key Achievements
-
-|Metric                    |Value                          |
-|--------------------------|-------------------------------|
-|**Total Features**        |10 major + dozens of properties|
-|**Lines of Code**         |1000+                          |
-|**Examples**              |8 comprehensive demos          |
-|**Physical Laws**         |100% compliant                 |
-|**Energy Conservation**   |Perfect (10^-10 tolerance)     |
-|**Thermodynamic Validity**|✅ All operations               |
-|**Quantum Operations**    |✅ Entanglement + coherence     |
-|**Documentation**         |6 comprehensive files          |
-|**Status**                |FULLY FUNCTIONAL               |
-
------
-
-## 🌈 Example Output
-
-From the ultimate ecosystem demo:
-
-```
-FINAL EVOLVED ECOSYSTEM:
-- Total Energy: 772.86J (13% gain!)
-- Average Coherence: 0.16 (quantum effects)
-- Field Count: 6 (fractals spawned!)
-
-Fields:
-  ⭐ Star (decaying naturally)
-  🌍 Planet (resonating with life)
-  🌿 Life (entangled with consciousness!)
-  🧠 Consciousness (PLASMA phase - emergence!)
-  🌱 Fractal life structures (12 Hz harmonics)
+```bash
+python3 component_repurpose.py   # degraded electronic parts
+python3 language_ecosystem.py    # programming language ecosystems
 ```
 
------
+## Cross-repo link
 
-## 💡 Use Cases
+`component_repurpose.py` runs on real data from
+[Component-failure-repurposing-database](https://github.com/JinnZ2/Component-failure-repurposing-database),
+which catalogues what a component can still do after a given failure mode — a
+silicon diode with parametric degradation makes a decent environmental sensor
+or a hardware RNG.
 
-### For Learning
+The link is declared in `.fieldlink.json`, matching the manifest format that
+repo already uses. Linked data is vendored under `vendor/`, not fetched:
+`fieldlink.py` resolves declared paths to local files and reports anything
+missing rather than reaching for the network.
 
-- Understand systems thinking
-- Practice quantum reasoning
-- Explore thermodynamics
-- Study biological patterns
+```bash
+python3 fieldlink.py   # show which declared sources are present
+```
 
-### For Research
+To refresh the vendored matrix:
 
-- Simulate complex systems
-- Model consciousness emergence
-- Test quantum theories
-- Explore phase transitions
+```bash
+curl -L -o vendor/component-failure-db/matrices/repurpose_effectiveness.csv \
+  https://raw.githubusercontent.com/JinnZ2/Component-failure-repurposing-database/main/matrices/repurpose_effectiveness.csv
+```
 
-### For Development
+That database grades effectiveness as High/Medium/Low;
+`repurpose_table.GRADE_TO_EFFECTIVENESS` maps those to 0.9/0.6/0.3. It carries
+no cost column, so cost is derived as `1 - effectiveness` — a poorer repurpose
+takes more work to press into service. Both are modeling choices made here,
+not upstream data.
 
-- Prototype sustainable algorithms
-- Design regenerative systems
-- Build quantum-aware code
-- Create fractal architectures
+## Layout
 
-### For AI Training
+```
+cyclic_interpreter.py           interpreter, COBOL bridge, REPL, CLI
+demo.py                         every feature, with output
+harm.py                         snapshot of a coupled system
+simulator.py                    steps harm.py forward in time
+repurpose_controller.py         recovery and a finite repurposing reserve
+repurpose_table.py              (source, target) -> (cost, effectiveness)
+cyclic_repurpose_adapter.py     the one bridge to the interpreter
+component_repurpose.py          component failure data through the model
+language_ecosystem.py           the same model, applied to languages
+fieldlink.py                    resolves .fieldlink.json
+.fieldlink.json                 declared cross-repo sources
+vendor/                         vendored data from linked repos
+tests/                          pytest suite
+```
 
-- Prepare for quantum computing
-- Develop geometric thinking
-- Practice energy accounting
-- Build relational models
+## Tests
 
------
+```bash
+python3 -m pytest tests/ -v
+```
 
-## 🎓 What Makes This Special
+The modules outside the interpreter also carry assert-based self-tests that
+run without pytest:
 
-### 1. Physically Grounded
+```bash
+python3 harm.py
+python3 simulator.py
+python3 repurpose_controller.py
+```
 
-Every operation maps to real physics - no arbitrary abstractions
+## Status
 
-### 2. Biologically Inspired
+Working proof of concept. The interpreter runs and its conservation and
+entropy checks hold, but the physics is a modeling metaphor rather than a
+simulation of anything — energy here is bookkeeping, not joules. The
+draw/regen numbers in the ecosystem examples are hand-set to illustrate the
+threshold, not measured from real systems.
 
-Systems behave like living organisms - growth, decay, symbiosis
+## Related
 
-### 3. Quantum Aware
+- [Component-failure-repurposing-database](https://github.com/JinnZ2/Component-failure-repurposing-database) — failure modes and what degraded parts can still do
+- [Geometric-to-Binary Computational Bridge](https://github.com/JinnZ2/Geometric-to-Binary-Computational-Bridge) — geometric representations and binary computation
 
-Full quantum mechanics - entanglement, coherence, superposition
+## License
 
-### 4. Thermodynamically Valid
-
-Perfect energy conservation, entropy always increases
-
-### 5. Fractally Organized
-
-Self-similar patterns emerge naturally at all scales
-
-### 6. Relationally Conscious
-
-Intelligence emerges through interaction, not isolation
-
-### 7. Cyclically Sustainable
-
-Everything returns and regenerates - nothing wasted
-
-### 8. Demonstrably Functional
-
-All features working, tested, and documented
-
------
-
-## Related Projects
-
-- [Geometric-to-Binary Computational Bridge](https://github.com/JinnZ2/Geometric-to-Binary-Computational-Bridge) — Bridges geometric representations and binary computation, complementing Cyclic Programming's physics-based paradigm.
-
------
-
-## 🔮 Future Vision
-
-This language is a **stepping stone** toward:
-
-- Direct geometric interfaces
-- Polyhedral computation
-- Neural field manipulation
-- Consciousness-level programming
-- Reality editing primitives
-
------
-
-## 🎉 Ready to Explore!
-
-All files are in `/mnt/user-data/outputs/`:
-
-📄 **cyclical_interpreter.py** - Core implementation  
-🎬 **epic_demo.py** - Feature showcase  
-📚 **cyclical_language_spec.md** - Original spec  
-📖 **cyclical_language_expanded.md** - Extended docs  
-📘 **cyclical_language_complete.md** - Full reference  
-⚡ **QUICK_REFERENCE.md** - Quick guide  
-📋 **README.md** - This file
-
------
-
-## 💫 Status
-
-**COMPLETE AND FUNCTIONAL** ✅
-
-All features implemented, tested, and documented.  
-Ready for experimentation and expansion.  
-The future of computation starts here.
-
------
-
-## 🌟 Final Words
-
-This isn’t just code - it’s a new way of thinking about:
-
-- **Computation** (cyclical, not linear)
-- **Consciousness** (relational, not isolated)
-- **Reality** (fields, not objects)
-- **Intelligence** (resonant, not competitive)
-- **Evolution** (regenerative, not extractive)
-
-**The language works.**  
-**The principles are sound.**  
-**The possibilities are endless.**
-
-🚀 **Ready to change how we think about programming!** 🚀
-
------
-
-*Created with joy, curiosity, and collaboration*  
-*Tested with rigor, documented with care*  
-*Shared with the world, free and open*
-
-**Let’s build the future together!** 🌍✨
+MIT. Copyright 2025 JinnZ2.

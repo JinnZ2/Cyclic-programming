@@ -1,0 +1,47 @@
+{
+  "fieldlink": {
+    "version": "1.1",
+    "role": ["cyclic interpreter", "energy accounting", "cascade simulation"],
+    "provides": [
+      "CyclicalInterpreter",
+      "COBOLBridge",
+      "harm.read",
+      "simulator.run",
+      "repurpose_controller.run_with_repurposing"
+    ],
+    "sources": [
+      {
+        "name": "component-failure-db",
+        "repo": "https://github.com/JinnZ2/Component-failure-repurposing-database",
+        "ref": "main",
+        "paths": ["matrices/repurpose_effectiveness.csv"],
+        "provides": [
+          "component failure modes",
+          "repurpose effectiveness matrix"
+        ],
+        "consumed_by": [
+          "repurpose_table.load_component_matrix",
+          "component_repurpose.py"
+        ],
+        "vendored": "vendor/component-failure-db"
+      },
+      {
+        "name": "geometric-bridge",
+        "repo": "https://github.com/JinnZ2/Geometric-to-Binary-Computational-Bridge",
+        "ref": "main",
+        "paths": ["GEIS/**"],
+        "provides": ["GeometricEncoder", "StateTensor"],
+        "consumed_by": []
+      }
+    ],
+    "local_manifests": [
+      "cyclic_interpreter.py",
+      "harm.py",
+      "simulator.py",
+      "repurpose_controller.py",
+      "repurpose_table.py",
+      "tests/**"
+    ],
+    "offline": true
+  }
+}

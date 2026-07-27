@@ -2,19 +2,31 @@
 
 ## Project Overview
 
-Cyclic Programming is a novel programming language/paradigm that combines quantum mechanics, thermodynamics, biology, and field theory into a computational language. Code "thinks in cycles," conserves energy, and builds capacity through use. This repository contains a proof-of-concept Python interpreter and comprehensive documentation.
+This repo holds two things that share one idea — track where capacity goes, and never let an operation create it from nothing.
 
-**License:** MIT (Copyright 2025 JinnZ2)
+1. **A proof-of-concept interpreter** for a small language whose operations are written as energy transfers using mathematical Unicode operators, with a COBOL-inspired alternative syntax. Energy is bookkeeping, not joules: the physics is a modeling metaphor, and docs should not claim otherwise.
+2. **A cascade model** that uses the same accounting to ask when a degrading system passes the point where continuing is cheaper than reversing, and whether repurposing keeps it on the near side.
+
+**License:** MIT (Copyright 2025 JinnZ2). The cascade-model modules carry CC0 headers from their original author.
 
 ## Repository Structure
 
 ```
 ├── cyclic_interpreter.py        # Main interpreter, COBOL bridge, REPL, and CLI
-├── Cyclic_interpreter.py        # Earlier/simpler interpreter version
-├── epic_demo.py                 # Complete feature showcase with 10 runnable examples
+├── demo.py                      # Feature showcase with 10 runnable examples
+├── harm.py                      # Snapshot read of a coupled system
+├── simulator.py                 # Steps harm.py forward in time
+├── repurpose_controller.py      # Passive recovery + a finite repurposing reserve
+├── repurpose_table.py           # (source, target) -> (cost, effectiveness)
+├── cyclic_repurpose_adapter.py  # The only bridge to the interpreter
+├── component_repurpose.py       # Component failure data through the cascade model
+├── language_ecosystem.py        # Same model, applied to language ecosystems
+├── fieldlink.py                 # Resolves .fieldlink.json cross-repo sources
+├── .fieldlink.json              # Declared links to sibling repos
+├── vendor/                      # Vendored data from linked repos
 ├── pyproject.toml               # Python packaging config (pip install -e .)
 ├── tests/
-│   └── test_interpreter.py      # pytest test suite (40 tests)
+│   └── test_interpreter.py      # pytest test suite
 ├── README.md                    # Project overview and quick start
 ├── Specifications.md            # Core language specification and principles
 ├── QUICK_REFERENCE.md           # Syntax quick reference guide
@@ -22,6 +34,20 @@ Cyclic Programming is a novel programming language/paradigm that combines quantu
 ├── Expanded.md                  # Extended features documentation
 └── LICENSE                      # MIT License
 ```
+
+## Cascade model
+
+`harm.py` reads a snapshot: per-node draw-minus-regen imbalance, induced imbalance at each order outward, whether cost is displaced through couplings, and whether it inflates. `simulator.py` makes it dynamical — displaced cost erodes the receiving node's regen. `repurpose_controller.py` adds passive recovery plus a finite, decaying reserve a controller spends to restore capacity.
+
+Controller convention: a controller is called as `controller(t, system, reserve)` and returns a list of `(node_name, amount)` actions. **The runner charges the reserve** — a controller must not decrement `reserve.value` itself.
+
+Two worked examples use the identical machinery on different domains: `component_repurpose.py` (degraded electronic parts, real upstream data) and `language_ecosystem.py` (language ecosystems, hand-set numbers).
+
+## Cross-repo link
+
+`.fieldlink.json` mirrors the manifest format used by [Component-failure-repurposing-database](https://github.com/JinnZ2/Component-failure-repurposing-database). Linked data is **vendored under `vendor/`, never fetched at runtime** — the manifest sets `"offline": true`, and `fieldlink.py` reports a missing source rather than reaching for the network. Use `fieldlink.component_matrix_path()` to locate vendored data; do not hardcode paths under `vendor/`.
+
+`repurpose_table.load_component_matrix()` adapts that repo's `matrices/repurpose_effectiveness.csv` into the same `(source, target) -> (cost, effectiveness)` shape used for languages. Two modeling choices live there and must stay documented as choices, not upstream facts: High/Medium/Low grades map to 0.9/0.6/0.3, and cost is derived as `1 - effectiveness` because the CSV has no cost column. Source keys are `"Component/Failure Mode"`.
 
 ## Key Architecture
 
@@ -159,7 +185,14 @@ python3 cyclic_interpreter.py -e "⊗(fieldA, fieldB)"
 python3 cyclic_interpreter.py myprogram.cyc
 
 # Run the full feature showcase
-python3 epic_demo.py
+python3 demo.py
+
+# Cascade model: the two worked examples
+python3 component_repurpose.py
+python3 language_ecosystem.py
+
+# Show which declared cross-repo sources are vendored
+python3 fieldlink.py
 ```
 
 ### REPL Commands
@@ -187,7 +220,9 @@ Any Cyclic expression or `COBOL:VERB` inline command can be typed directly at th
 python3 -m pytest tests/ -v
 ```
 
-40 tests covering:
+The cascade-model modules also carry assert-based self-tests that run without pytest — `python3 harm.py`, `python3 simulator.py`, `python3 repurpose_controller.py`, and so on. New modules in that family should follow the same pattern: `_t_*` functions plus a `_run()` that calls them.
+
+Tests cover:
 - Field creation and state management
 - Energy conservation (bidirectional, directed transfer, spatial gradient)
 - Entropy increase (2nd law)
@@ -214,9 +249,10 @@ python3 -m pytest tests/ -v
 
 ## Important Notes for AI Assistants
 
-- `cyclic_interpreter.py` (lowercase 'c') is the main/current interpreter — `Cyclic_interpreter.py` (uppercase 'C') is an earlier version
-- The `sys.path.insert(0, '/mnt/user-data/outputs')` line in `epic_demo.py` is an artifact of the original development environment; it can be removed
+- `cyclic_interpreter.py` is the interpreter; there is exactly one, and nothing outside `cyclic_repurpose_adapter.py` should import it directly
 - Run `python3 -m pytest tests/ -v` before pushing changes to verify nothing is broken
+- **Units matter and have caused real bugs.** `FieldState.decay()` takes a *rate* (a fraction of current energy), while `CyclicRepurposeEngine.draw_down()` takes an *absolute amount*; the adapter converts between them. `FieldState.energy` is an `EnergyState`, not a float — the scalar is `field.energy.total_energy`
+- Prose in the README and docs should stay plain. No emoji headers, no "revolutionary"/"consciousness-level" framing, no invented metrics tables. Say what the code does and what is a modeling assumption
 - All operations must maintain energy conservation — any new feature must track and preserve total system energy
 - Entropy must never decrease in any operation (thermodynamic validity)
 - When adding new features, follow the existing pattern: add a method to `CyclicalInterpreter`, register any new syntax in the parser regex, and add a demo to `epic_demo.py`

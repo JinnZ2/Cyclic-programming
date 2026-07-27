@@ -219,7 +219,7 @@ for i in range(n):
 ## Quick Test
 
 ```python
-from cyclical_interpreter import CyclicalInterpreter
+from cyclic_interpreter import CyclicalInterpreter
 
 interp = CyclicalInterpreter()
 interp.create_field("test", 100.0, frequency=5.0)

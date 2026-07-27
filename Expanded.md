@@ -369,8 +369,8 @@ The language works. The principles are sound. The path forward is clear.
 
 ## Files
 
-- **Specification**: `cyclical_language_spec.md`
-- **Interpreter**: `cyclical_interpreter.py`
-- **This Document**: `cyclical_language_expanded.md`
+- **Specification**: `Specifications.md`
+- **Interpreter**: `cyclic_interpreter.py`
+- **This Document**: `Expanded.md`
 
 All code is functional and tested. Ready for expansion and experimentation.
