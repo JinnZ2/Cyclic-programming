@@ -9,9 +9,10 @@ create it from nothing.
 
 - **The interpreter** (`cyclic_interpreter.py`) executes expressions written
   with mathematical operators — `∇F(a↔b)`, `∮regenerate(f, 30)`, `⊗(a, b)`.
-  Every operation conserves total energy to within 1e-10 and never decreases
-  entropy. A COBOL-inspired bridge offers the same operations in a
-  division/verb syntax.
+  Bidirectional exchange is checked for energy conservation at runtime;
+  several other operations are not, and do not conserve it (see
+  [Known gaps](#known-gaps)). A COBOL-inspired bridge offers the same
+  operations in a division/verb syntax.
 - **The cascade model** (`harm.py`, `simulator.py`, `repurpose_controller.py`)
   models nodes that draw down capacity faster than they regenerate, and the
   cost that displaces onto whatever they are coupled to. It reports when a
@@ -145,6 +146,11 @@ component_repurpose.py          component failure data through the model
 language_ecosystem.py           the same model, applied to languages
 fieldlink.py                    resolves .fieldlink.json
 .fieldlink.json                 declared cross-repo sources
+quantity.py                     physics-quantity types + the conserving Ledger
+quantity_audit.py               checks interpreter operations against those types
+taxonomy_lab.py                 falsification harness for the taxonomy
+residue_probe.py                E3 fixture: is a label actually inert?
+QUANTITY_TAXONOMY.md            the vocabulary and what testing it found
 vendor/                         vendored data from linked repos
 tests/                          pytest suite
 ```
@@ -164,13 +170,40 @@ python3 simulator.py
 python3 repurpose_controller.py
 ```
 
+## Known gaps
+
+`check_energy_conservation()` has exactly one call site, inside
+`execute_bidirectional_interaction`. Every other operation is unchecked, and
+several do not conserve energy. `quantity_audit.py` measures this:
+
+```bash
+python3 quantity_audit.py
+```
+
+As of this commit, 4 of 10 operations satisfy the types their cells should
+carry:
+
+- **Resonance and symbiosis create energy in a closed pair.** `~(a ≈ b)`
+  multiplies both fields by `1 + 0.2·resonance_strength` with nothing
+  debited; sixteen applications turn 200 units into 3697.
+- **Coherence is clamped in `regenerate` but not in `resonate_with`**, so
+  repeated resonance carries it to 1.6, outside its [0,1] bound. The existing
+  `test_coherence_bounded` passes because it exercises entanglement, which
+  does clamp.
+- **`regenerate`, `decay` and `phase` move energy with no reservoir cell to
+  debit**, so the change is real but unaccounted.
+
+Treat resonance amplification as a documented behaviour of the current
+interpreter, not as a conservation guarantee. `QUANTITY_TAXONOMY.md` describes
+the typing that would make these unwritable rather than merely reported.
+
 ## Status
 
-Working proof of concept. The interpreter runs and its conservation and
-entropy checks hold, but the physics is a modeling metaphor rather than a
+Working proof of concept. The physics is a modeling metaphor rather than a
 simulation of anything — energy here is bookkeeping, not joules. The
 draw/regen numbers in the ecosystem examples are hand-set to illustrate the
-threshold, not measured from real systems.
+threshold, not measured from real systems. See [Known gaps](#known-gaps) for
+where the interpreter's own invariants are not upheld.
 
 ## Related
 
