@@ -28,6 +28,12 @@ This repo holds two things that share one idea — track where capacity goes, an
 ├── taxonomy_lab.py              # Falsification harness (E1 coverage/E2 axes/E3 residue)
 ├── residue_probe.py             # E3 fixture: is a label actually inert?
 ├── adversarial_corpus.py        # Bias probe with an answer key (17 cases)
+├── quantity_checker.py          # Lighter typed-variable prototype (see note below)
+├── code_playground.py           # Chains typed snippets into repurpose paths
+├── recycling_playground.py      # Mines a source tree for reusable snippets
+├── repurpose_workshop.py        # CLI over the catalogue and the playground
+├── vector_recycling_playground.py  # Vector-space snippet transformations
+├── token_recycling_playground.py   # Token-level recycling experiments
 ├── QUANTITY_TAXONOMY.md         # The vocabulary and what testing it found
 ├── vendor/                      # Vendored data from linked repos
 ├── pyproject.toml               # Python packaging config (pip install -e .)
@@ -103,6 +109,24 @@ measures otherwise, and 4 of 10 operations currently satisfy their cell types.
 an orphan credit is not expressible. Rebuilding `EnergyState` on it would change
 interpreter behaviour (resonance amplification is currently a documented feature),
 so treat that as a design decision, not a bug fix.
+
+### Two quantity implementations — unresolved
+
+`quantity.py` and `quantity_checker.py` both implement the same taxonomy and
+neither strictly dominates the other:
+
+- `quantity.py` has immutable values, a per-axis error class, the `Ledger`,
+  `weighted_mean`, the transcendental dimensionless check, and `erase_cost`
+- `quantity_checker.py` has mutable `QuantityVar` with bounds-checked writes,
+  and `__mul__`/`__truediv__` that compose dimensions — which `quantity.py`
+  does not have at all
+
+`quantity_audit.py` and the taxonomy tests import the first; the four
+playground modules import the second. Consolidating means picking a direction
+and porting what the loser has, so it is a design decision, not cleanup. Until
+then, **fix any taxonomy rule in both** — `quantity_checker` silently allowed
+`RELATIVE + RELATIVE`, monotone decrements, and arithmetic on a `convention`
+residue until those were added to match `quantity.py`.
 
 ### COBOL-Inspired Bridge
 
