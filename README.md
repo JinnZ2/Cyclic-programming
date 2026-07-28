@@ -153,6 +153,7 @@ quantity_audit.py               checks interpreter operations against those type
 taxonomy_lab.py                 falsification harness for the taxonomy
 residue_probe.py                E3 fixture: is a label actually inert?
 adversarial_corpus.py           bias probe with an answer key (17 cases)
+claim_audit_spin.py             claim audit, same verdict shape as the corpus
 quantity_checker.py             mutable typed variables, composes dimensions
 taxonomy_conformance.py         one spec, checked against both implementations
 code_playground.py              chains typed snippets into repurpose paths

@@ -28,6 +28,7 @@ This repo holds two things that share one idea — track where capacity goes, an
 ├── taxonomy_lab.py              # Falsification harness (E1 coverage/E2 axes/E3 residue)
 ├── residue_probe.py             # E3 fixture: is a label actually inert?
 ├── adversarial_corpus.py        # Bias probe with an answer key (17 cases)
+├── claim_audit_spin.py          # Claim audit, same verdict shape as the corpus
 ├── quantity_checker.py          # Mutable typed variables, composes dimensions
 ├── taxonomy_conformance.py      # One spec, checked against every implementation
 ├── code_playground.py           # Chains typed snippets into repurpose paths
@@ -93,7 +94,13 @@ Two worked examples use the identical machinery on different domains: `component
 ### Physical Constraints — what is actually enforced
 
 Do not repeat the claim that all operations conserve energy; `quantity_audit.py`
-measures otherwise, and 4 of 10 operations currently satisfy their cell types.
+measures otherwise. 4 of 10 operations satisfy the cell types that are actually
+**measured**, and coverage is 3 of 4 declared cells — two separate numbers that
+must not be collapsed into one. `phase_angle` is declared and deliberately
+unmeasured, because phase is cyclic and the taxonomy has no `CYCLIC` domain
+value; an unmeasured axis reports `measured=False` and never counts as a pass.
+**When adding a check, add an `AxisAudit` record — silently omitting an axis
+is how a report claims coverage it does not have.**
 
 - **Energy conservation**: checked to 1e-10 via `check_energy_conservation()`, but
   that function has **exactly one call site**, inside `execute_bidirectional_interaction`.

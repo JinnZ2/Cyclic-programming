@@ -17,6 +17,9 @@
 #
 # Run: python3 quantity_audit.py
 
+from dataclasses import dataclass
+from typing import Optional
+
 from cyclic_interpreter import CyclicalInterpreter
 from quantity import (
     Datum, DomainError, MonotonicityError,
@@ -34,6 +37,34 @@ CELL_TYPES = {
     "phase_angle":      relative_scale(DIMENSIONLESS, "phase_angle"),
 }
 
+# Cells this audit declares but does NOT check, and why. An unmeasured axis
+# must report itself as unmeasured: a checker that silently omits an axis
+# reports PASS where it owes COVERAGE, and the violation does not disappear,
+# it just goes unlogged.
+UNMEASURED = {
+    "phase_angle": (
+        "phase is cyclic (mod 2pi) and the taxonomy has no CYCLIC domain "
+        "value — BOUNDED means clamped, and wraparound is not saturation, "
+        "so no correct rule exists to check it against yet"),
+}
+
+
+@dataclass(frozen=True)
+class AxisAudit:
+    """
+    One axis, checked across one named boundary, or explicitly not checked.
+
+    `measured=False` is a first-class outcome. It never counts as a pass.
+    """
+
+    cell: str                       # which declared cell
+    rule: str                       # the axis rule under test
+    boundary: str                   # WHAT system — declared, never defaulted
+    measured: bool
+    delta: Optional[float] = None   # signed change across the boundary
+    ok: Optional[bool] = None       # None when unmeasured
+    detail: str = ""
+
 
 def _snapshot(interp):
     """Totals and extremes across every field, for before/after comparison."""
@@ -46,38 +77,61 @@ def _snapshot(interp):
     }
 
 
-def _violations(before, after, closed):
-    """Check a before/after pair against the declared cell types."""
-    found = []
+def _axis_audits(before, after, closed):
+    """
+    Audit every declared cell, returning one record per axis.
+
+    Each record names the boundary it was measured across and carries a
+    signed delta, or declares itself unmeasured. Nothing is omitted silently.
+    """
+    boundary = "all fields in the interpreter" if closed else \
+               "all fields, plus an undeclared external source/sink"
+    audits = []
 
     delta = after["total_energy"] - before["total_energy"]
     if closed:
-        if abs(delta) > TOLERANCE:
-            found.append((
-                "CONSERVED", "total_energy",
-                f"closed operation changed the total by {delta:+.4f}"))
-    elif abs(delta) > TOLERANCE:
-        found.append((
-            "DEBIT_CREDIT", "total_energy",
-            f"{delta:+.4f} appeared with no reservoir cell debited"))
+        audits.append(AxisAudit(
+            "total_energy", "CONSERVED", boundary, True, delta,
+            abs(delta) <= TOLERANCE,
+            f"closed operation changed the total by {delta:+.4f}"
+            if abs(delta) > TOLERANCE else "total unchanged"))
+    else:
+        audits.append(AxisAudit(
+            "total_energy", "DEBIT_CREDIT", boundary, True, delta,
+            abs(delta) <= TOLERANCE,
+            f"{delta:+.4f} appeared with no reservoir cell debited"
+            if abs(delta) > TOLERANCE else "total unchanged"))
 
-    if after["entropy"] < before["entropy"] - TOLERANCE:
-        found.append((
-            "MONOTONE", "entropy",
-            f"entropy fell by {before['entropy'] - after['entropy']:.4f}"))
+    d_entropy = after["entropy"] - before["entropy"]
+    audits.append(AxisAudit(
+        "entropy", "MONOTONE", boundary, True, d_entropy,
+        d_entropy >= -TOLERANCE,
+        f"entropy fell by {-d_entropy:.4f}" if d_entropy < -TOLERANCE
+        else "entropy did not fall"))
 
     ceiling = CELL_TYPES["quantum_coherence"].ceiling
     floor = CELL_TYPES["quantum_coherence"].floor
-    if after["max_coherence"] > ceiling + TOLERANCE:
-        found.append((
-            "BOUNDED[0,1]", "quantum_coherence",
-            f"coherence reached {after['max_coherence']:.4f}"))
-    if after["min_coherence"] < floor - TOLERANCE:
-        found.append((
-            "BOUNDED[0,1]", "quantum_coherence",
-            f"coherence fell to {after['min_coherence']:.4f}"))
+    high, low = after["max_coherence"], after["min_coherence"]
+    breached = high > ceiling + TOLERANCE or low < floor - TOLERANCE
+    audits.append(AxisAudit(
+        "quantum_coherence", "BOUNDED[0,1]", boundary, True,
+        high - before["max_coherence"], not breached,
+        (f"coherence reached {high:.4f}" if high > ceiling + TOLERANCE
+         else f"coherence fell to {low:.4f}" if low < floor - TOLERANCE
+         else f"coherence stayed within [{floor}, {ceiling}]")))
 
-    return found
+    # declared but not checked — reported, never counted as a pass
+    for cell, reason in UNMEASURED.items():
+        audits.append(AxisAudit(cell, "-", boundary, False, None, None, reason))
+
+    return audits
+
+
+def _violations(before, after, closed):
+    """Failures only, in the legacy (rule, cell, detail) shape."""
+    return [(a.rule, a.cell, a.detail)
+            for a in _axis_audits(before, after, closed)
+            if a.measured and not a.ok]
 
 
 def _two_fields(energy=100.0, frequency=5.0):
@@ -119,6 +173,7 @@ def audit():
             "before": before,
             "after": after,
             "violations": _violations(before, after, closed),
+            "axes": _axis_audits(before, after, closed),
         })
     return results
 
@@ -145,7 +200,13 @@ def main():
 
     print("-" * 78)
     clean = sum(1 for r in results if not r["violations"])
-    print(f"{clean}/{len(results)} operations satisfy their declared cell types")
+    measured = [c for c in CELL_TYPES if c not in UNMEASURED]
+    print(f"{clean}/{len(results)} operations satisfy the cell types that were "
+          f"actually MEASURED")
+    print(f"coverage: {len(measured)}/{len(CELL_TYPES)} declared cells are "
+          f"checked — this is not the same claim as a pass rate")
+    for cell, reason in UNMEASURED.items():
+        print(f"  unmeasured  {cell}: {reason}")
     print()
 
     axes = {}

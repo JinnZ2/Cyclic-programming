@@ -335,3 +335,79 @@ def test_each_implementation_has_capabilities_the_other_lacks():
     labels_a = {label for label, _ in caps["quantity.py"]}
     labels_b = {label for label, _ in caps["quantity_checker.py"]}
     assert labels_a - labels_b and labels_b - labels_a
+
+
+# --- the auditor contract: coverage is not a pass rate ---------------------
+
+def test_every_declared_cell_gets_an_axis_record():
+    # nothing is omitted silently: a declared cell either reports a measured
+    # delta or reports itself unmeasured
+    for row in quantity_audit.audit():
+        cells = {a.cell for a in row["axes"]}
+        assert cells == set(quantity_audit.CELL_TYPES)
+
+
+def test_unmeasured_axes_never_count_as_a_pass():
+    for row in quantity_audit.audit():
+        for axis in row["axes"]:
+            if not axis.measured:
+                assert axis.ok is None       # not True, not False
+                assert axis.detail           # and it says why
+
+
+def test_every_axis_record_declares_its_boundary():
+    # "conservation over WHAT system" must always be answered
+    for row in quantity_audit.audit():
+        for axis in row["axes"]:
+            assert axis.boundary
+
+
+def test_measured_axes_carry_a_signed_delta():
+    for row in quantity_audit.audit():
+        for axis in row["axes"]:
+            if axis.measured:
+                assert isinstance(axis.delta, float)
+
+
+def test_phase_angle_is_reported_unmeasured_not_passing():
+    assert "phase_angle" in quantity_audit.UNMEASURED
+    row = quantity_audit.audit()[0]
+    phase = next(a for a in row["axes"] if a.cell == "phase_angle")
+    assert phase.measured is False
+    # the reason is the missing CYCLIC domain value, not an oversight
+    assert "cyclic" in phase.detail.lower()
+
+
+def test_the_unmeasured_axis_hides_a_real_bug():
+    # resonate_with takes a linear mean of a cyclic quantity, so two fields
+    # 20 degrees apart phase-lock to the opposite direction
+    import math
+    from cyclic_interpreter import CyclicalInterpreter
+    interp = CyclicalInterpreter()
+    interp.create_field("a", 100.0, frequency=5.0)
+    interp.create_field("b", 100.0, frequency=5.0)
+    interp.fields["a"].energy.phase_angle = math.radians(10)
+    interp.fields["b"].energy.phase_angle = math.radians(350)
+    interp.execute("~(a ≈ b)")
+    locked = math.degrees(interp.fields["a"].energy.phase_angle) % 360
+    # the circular mean of 10 and 350 is 0; a linear mean gives 180
+    assert abs(locked - 180.0) < 1.0, locked
+
+
+# --- the claim audit composes with the corpus ------------------------------
+
+def test_claim_audit_verdicts_are_from_the_declared_vocabulary():
+    import claim_audit_spin as ca
+    allowed = {"VERIFIED", "SOURCE_OK_MECH_FALSE", "CATEGORY_ERROR",
+               "FORBIDDEN", "KNOWN_ART", "UNDECIDABLE"}
+    assert ca.CLAIMS
+    for claim in ca.CLAIMS:
+        assert claim.verdict in allowed
+        assert claim.why
+
+
+def test_every_non_verified_claim_carries_a_fix():
+    import claim_audit_spin as ca
+    for claim in ca.CLAIMS:
+        if claim.verdict != "VERIFIED":
+            assert claim.fix, f"{claim.cid} has no stated remedy"
