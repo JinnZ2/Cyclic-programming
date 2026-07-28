@@ -153,7 +153,8 @@ quantity_audit.py               checks interpreter operations against those type
 taxonomy_lab.py                 falsification harness for the taxonomy
 residue_probe.py                E3 fixture: is a label actually inert?
 adversarial_corpus.py           bias probe with an answer key (17 cases)
-quantity_checker.py             lighter typed-variable prototype (see note)
+quantity_checker.py             mutable typed variables, composes dimensions
+taxonomy_conformance.py         one spec, checked against both implementations
 code_playground.py              chains typed snippets into repurpose paths
 recycling_playground.py         mines a source tree for reusable snippets
 repurpose_workshop.py           CLI over the catalogue and the playground

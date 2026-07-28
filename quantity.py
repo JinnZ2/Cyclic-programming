@@ -203,6 +203,15 @@ class Quantity:
 
     def __add__(self, other):
         self._require_same_type(other, "add")
+        # AXIS 1: adding intensives is a category error. total() guarded this
+        # and `+` did not, so the rule held for a list and not for a pair —
+        # which is the shape of gap a shared conformance suite exists to find.
+        for operand in (self, other):
+            if operand.type.extensivity is Extensivity.INTENSIVE:
+                raise ExtensivityError(
+                    f"cannot add INTENSIVE {operand.type.label or 'quantity'} — "
+                    "intensives combine only as extensive-weighted averages; "
+                    "use weighted_mean()")
         # AXIS 4: two relative zeros have no common origin, so their sum
         # denominates nothing. 3pm + 4pm is not a time.
         if (self.type.datum is Datum.RELATIVE
@@ -549,9 +558,13 @@ def _t_intensive_averages_against_extensive_weight():
 
 
 def _t_relative_plus_relative_is_rejected():
-    noon = Quantity(12.0, relative_scale(TIME, "clock"))
+    # EXTENSIVE and RELATIVE, so the datum rule is what fires here rather
+    # than the intensive-addition rule — one axis per check
+    clock = QuantityType(
+        Extensivity.EXTENSIVE, Conservation.PRODUCIBLE, Datum.RELATIVE,
+        Transfer.DEBIT_CREDIT, TIME, label="clock")
     try:
-        noon + noon
+        Quantity(12.0, clock) + Quantity(12.0, clock)
     except DatumError:
         return
     raise AssertionError("expected DatumError: 3pm + 4pm is not a time")
@@ -589,13 +602,34 @@ def _t_monotone_cannot_run_backwards():
     raise AssertionError("expected MonotonicityError: clock rollback")
 
 
-def _t_bounded_fraction_cannot_leave_its_interval():
-    coherence = Quantity(0.95, bounded_fraction("coherence"))
+def _t_bounded_quantity_cannot_leave_its_interval():
+    # an EXTENSIVE bounded type, so this exercises the ceiling and not the
+    # intensive-addition rule — one axis per check
+    ratio = QuantityType(
+        Extensivity.EXTENSIVE, Conservation.PRODUCIBLE, Datum.ABSOLUTE,
+        Transfer.DEBIT_CREDIT, DIMENSIONLESS, floor=0.0, ceiling=1.0,
+        label="ratio")
     try:
-        coherence + Quantity(0.2, bounded_fraction("coherence"))
+        Quantity(0.95, ratio) + Quantity(0.2, ratio)
+    except DomainError:
+        pass
+    else:
+        raise AssertionError("expected DomainError: cannot exceed the ceiling")
+    try:
+        Quantity(1.6, ratio)
     except DomainError:
         return
-    raise AssertionError("expected DomainError: coherence cannot exceed 1")
+    raise AssertionError("expected DomainError on construction")
+
+
+def _t_intensives_cannot_be_added_pairwise():
+    # total() guarded this and `+` did not; the rule must hold for both
+    coherence = bounded_fraction("coherence")
+    try:
+        Quantity(0.4, coherence) + Quantity(0.5, coherence)
+    except ExtensivityError:
+        return
+    raise AssertionError("expected ExtensivityError: use weighted_mean()")
 
 
 def _t_transcendental_requires_dimensionless():

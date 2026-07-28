@@ -65,7 +65,10 @@ def test_intensive_averages_against_its_extensive_weight():
 
 
 def test_relative_datum_forbids_addition_but_allows_difference():
-    clock = relative_scale(TIME, "clock")
+    # EXTENSIVE so the datum rule is what fires, not intensive-addition
+    clock = quantity.QuantityType(
+        quantity.Extensivity.EXTENSIVE, quantity.Conservation.PRODUCIBLE,
+        Datum.RELATIVE, quantity.Transfer.DEBIT_CREDIT, TIME, label="clock")
     with pytest.raises(DatumError):
         Quantity(12.0, clock) + Quantity(12.0, clock)
     elapsed = Quantity(17.0, clock) - Quantity(9.0, clock)
@@ -76,6 +79,14 @@ def test_relative_datum_forbids_addition_but_allows_difference():
 def test_relative_difference_may_go_negative():
     clock = relative_scale(TIME, "clock")
     assert (Quantity(9.0, clock) - Quantity(17.0, clock)).value == -8.0
+
+
+def test_intensives_cannot_be_added_pairwise():
+    # the rule held for total() but not for `+` until the conformance
+    # suite compared the two implementations
+    coherence = bounded_fraction("coherence")
+    with pytest.raises(ExtensivityError):
+        Quantity(0.4, coherence) + Quantity(0.5, coherence)
 
 
 def test_dimension_mismatch_is_rejected():
@@ -91,12 +102,16 @@ def test_monotone_cannot_run_backwards():
         Quantity(100.0, clock) - Quantity(1.0, clock)
 
 
-def test_bounded_fraction_refuses_to_leave_its_interval():
-    coherence = bounded_fraction("coherence")
+def test_bounded_quantity_refuses_to_leave_its_interval():
+    # EXTENSIVE bounded type: this checks the ceiling, one axis at a time
+    ratio = quantity.QuantityType(
+        quantity.Extensivity.EXTENSIVE, quantity.Conservation.PRODUCIBLE,
+        Datum.ABSOLUTE, quantity.Transfer.DEBIT_CREDIT,
+        DIMENSIONLESS, floor=0.0, ceiling=1.0, label="ratio")
     with pytest.raises(DomainError):
-        Quantity(0.95, coherence) + Quantity(0.2, coherence)
+        Quantity(0.95, ratio) + Quantity(0.2, ratio)
     with pytest.raises(DomainError):
-        Quantity(1.6, coherence)
+        Quantity(1.6, ratio)
 
 
 def test_residue_forbids_arithmetic_and_ordering():
@@ -285,3 +300,38 @@ def test_pretype_is_mildly_physics_biased_not_balanced():
     assert tally["FORCED_FIT"] > tally["MISSED_GROUNDING"]
     # it has no residue verdict at all, so it can never miss a grounding
     assert tally["MISSED_GROUNDING"] == 0
+
+
+# --- shared conformance across implementations -----------------------------
+
+def _conformance_ids():
+    import taxonomy_conformance as tc
+    return [(a.__name__, r.rid) for a in tc.ADAPTERS for r in tc.RULES]
+
+
+@pytest.mark.parametrize("adapter_name,rule_id", _conformance_ids())
+def test_every_implementation_satisfies_every_taxonomy_rule(adapter_name, rule_id):
+    # One spec, run against both implementations. Neither is the reference:
+    # quantity_checker was missing the relative/monotone/residue rules, and
+    # quantity allowed adding intensives with `+` while total() rejected it.
+    import taxonomy_conformance as tc
+    adapter = next(a for a in tc.ADAPTERS if a.__name__ == adapter_name)()
+    rule = next(r for r in tc.RULES if r.rid == rule_id)
+    assert rule.check(adapter), f"{adapter.name} violates: {rule.statement}"
+
+
+def test_declared_capabilities_actually_exist():
+    import taxonomy_conformance as tc
+    for name, entries in tc.capabilities().items():
+        for label, present in entries:
+            assert present, f"{name} claims {label!r} but it is missing"
+
+
+def test_each_implementation_has_capabilities_the_other_lacks():
+    # the reason both exist: they answer different questions
+    import taxonomy_conformance as tc
+    caps = tc.CAPABILITIES
+    assert caps["quantity.py"] and caps["quantity_checker.py"]
+    labels_a = {label for label, _ in caps["quantity.py"]}
+    labels_b = {label for label, _ in caps["quantity_checker.py"]}
+    assert labels_a - labels_b and labels_b - labels_a
