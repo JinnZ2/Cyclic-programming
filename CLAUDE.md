@@ -23,6 +23,18 @@ This repo holds two things that share one idea — track where capacity goes, an
 ├── language_ecosystem.py        # Same model, applied to language ecosystems
 ├── fieldlink.py                 # Resolves .fieldlink.json cross-repo sources
 ├── .fieldlink.json              # Declared links to sibling repos
+├── quantity.py                  # Physics-quantity types + the conserving Ledger
+├── quantity_audit.py            # Checks interpreter ops against declared cell types
+├── taxonomy_lab.py              # Falsification harness (E1 coverage/E2 axes/E3 residue)
+├── residue_probe.py             # E3 fixture: is a label actually inert?
+├── adversarial_corpus.py        # Bias probe with an answer key (17 cases)
+├── quantity_checker.py          # Lighter typed-variable prototype (see note below)
+├── code_playground.py           # Chains typed snippets into repurpose paths
+├── recycling_playground.py      # Mines a source tree for reusable snippets
+├── repurpose_workshop.py        # CLI over the catalogue and the playground
+├── vector_recycling_playground.py  # Vector-space snippet transformations
+├── token_recycling_playground.py   # Token-level recycling experiments
+├── QUANTITY_TAXONOMY.md         # The vocabulary and what testing it found
 ├── vendor/                      # Vendored data from linked repos
 ├── pyproject.toml               # Python packaging config (pip install -e .)
 ├── tests/
@@ -77,12 +89,44 @@ Two worked examples use the identical machinery on different domains: `component
 | COBOL Full Programs | `IDENTIFICATION DIVISION...` | `COBOLBridge.execute_cobol()` |
 | COBOL Inline Syntax | `COBOL:VERB args` | Parsed in `parse_expression()` |
 
-### Physical Constraints Enforced at Runtime
+### Physical Constraints — what is actually enforced
 
-- **Energy conservation**: Verified to 1e-10 tolerance via `check_energy_conservation()`
-- **Entropy**: Always increases (2nd law of thermodynamics)
-- **Quantum coherence**: Bounded to [0, 1]
+Do not repeat the claim that all operations conserve energy; `quantity_audit.py`
+measures otherwise, and 4 of 10 operations currently satisfy their cell types.
+
+- **Energy conservation**: checked to 1e-10 via `check_energy_conservation()`, but
+  that function has **exactly one call site**, inside `execute_bidirectional_interaction`.
+  Resonance and symbiosis create energy in a closed pair; `regenerate`, `decay`
+  and `phase` move it with no reservoir to debit
+- **Entropy**: increases in practice, not enforced by a guard
+- **Quantum coherence**: clamped to [0, 1] in `regenerate` and entanglement, but
+  **not in `resonate_with`** — repeated resonance reaches 1.6. `test_coherence_bounded`
+  passes only because it exercises entanglement
 - **Phase states**: crystalline → normal → liquid → gas → plasma (ordered transitions)
+
+`quantity.py` encodes the seven-axis taxonomy from `QUANTITY_TAXONOMY.md`; its
+`Ledger` is the missing reservoir — cells can only be raised by `transfer()`, so
+an orphan credit is not expressible. Rebuilding `EnergyState` on it would change
+interpreter behaviour (resonance amplification is currently a documented feature),
+so treat that as a design decision, not a bug fix.
+
+### Two quantity implementations — unresolved
+
+`quantity.py` and `quantity_checker.py` both implement the same taxonomy and
+neither strictly dominates the other:
+
+- `quantity.py` has immutable values, a per-axis error class, the `Ledger`,
+  `weighted_mean`, the transcendental dimensionless check, and `erase_cost`
+- `quantity_checker.py` has mutable `QuantityVar` with bounds-checked writes,
+  and `__mul__`/`__truediv__` that compose dimensions — which `quantity.py`
+  does not have at all
+
+`quantity_audit.py` and the taxonomy tests import the first; the four
+playground modules import the second. Consolidating means picking a direction
+and porting what the loser has, so it is a design decision, not cleanup. Until
+then, **fix any taxonomy rule in both** — `quantity_checker` silently allowed
+`RELATIVE + RELATIVE`, monotone decrements, and arithmetic on a `convention`
+residue until those were added to match `quantity.py`.
 
 ### COBOL-Inspired Bridge
 

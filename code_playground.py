@@ -1,6 +1,6 @@
 # code_playground.py — cross‑language snippet repurpose playground.
 # CC0. stdlib only. phone‑buildable.
-# Depends on: quantity_checker.py, language_translation_table.py (optional)
+# Depends on: quantity_checker.py, repurpose_table.py (optional)
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Tuple
@@ -8,7 +8,14 @@ from quantity_checker import (
     QuantityType, QuantityVar, Extensivity, Conservation,
     Datum, Transfer, QuantityError
 )
-from language_translation_table import TRANSLATION_TABLE  # optional; fallback if absent
+# The old language_translation_table module was merged into repurpose_table,
+# which holds the same (source, target) -> (cost, effectiveness) mapping and
+# can also load it from CSV. The import stays optional: a missing table means
+# "assume translation is free", handled at the lookup below.
+try:
+    from repurpose_table import DEFAULT_LANGUAGE_TABLE as TRANSLATION_TABLE
+except ImportError:  # pragma: no cover - depends on install layout
+    TRANSLATION_TABLE = {}
 
 # ----------------------------------------------------------------------
 # Core data structures
@@ -88,6 +95,39 @@ class Playground:
         # In a full version, contravariance applies.
         return True
 
+    def _match_inputs(self, snippet: CodeSnippet,
+                      available: Dict[str, QuantityType]) -> Optional[Dict[str, str]]:
+        """
+        Bind each of the snippet's inputs to an available variable of
+        compatible type. Returns {parameter: variable} or None if any input
+        cannot be satisfied.
+
+        Matching is by TYPE, not by name. The reduction rule this playground
+        rests on says two bindings with the same topology and quantity type
+        are the same binding, and that names differing is not a difference —
+        so keying the search on names would make it depend on exactly the
+        thing it claims to discard. A snippet expecting `electric_energy_in`
+        must accept a variable called `sunlight` carrying the same energy type.
+
+        Each variable is consumed by at most one parameter, so a mixer needing
+        two water volumes will not fire on a single stream. The assignment is
+        greedy in sorted order rather than a full bipartite matching, which is
+        adequate for playground-sized snippet sets and deterministic.
+        """
+        binding: Dict[str, str] = {}
+        used: set = set()
+        for param, needed in snippet.input_types.items():
+            candidate = next(
+                (var for var in sorted(available)
+                 if var not in used
+                 and self._type_compatible(available[var], needed)),
+                None)
+            if candidate is None:
+                return None
+            binding[param] = candidate
+            used.add(candidate)
+        return binding
+
     def _build_graph(self) -> Dict[str, List[Tuple[str, str, float, float]]]:
         """
         Returns {src_snippet_name: [(dest_snippet_name, src_output, dest_input, cost, effectiveness)]}
@@ -138,10 +178,9 @@ class Playground:
             # Which snippets can we trigger from the current available vars?
             # For each snippet, if all its inputs are present, we can apply it.
             for s_name, s in self.snippets.items():
-                # Check if all inputs of s are in current_vars with compatible types
-                if not all(inp in current_vars and self._type_compatible(
-                    current_vars[inp], s.input_types[inp])
-                           for inp in s.input_types):
+                # Fireable when every input can be bound to some available
+                # variable of compatible type — by type, not by name.
+                if self._match_inputs(s, current_vars) is None:
                     continue
                 # This snippet is fireable. We'll need to produce its outputs
                 new_vars = {**current_vars, **s.output_types}  # type annotation only
@@ -155,16 +194,16 @@ class Playground:
                 new_chain.steps = chain.steps.copy()
                 new_chain.add_step(s, cost_estimate, 1.0)
                 # Check if target outputs are now covered
-                if all(targ in new_vars for targ in target_outputs):
-                    # and types match
-                    if all(self._type_compatible(new_vars[targ], target_outputs[targ])
-                           for targ in target_outputs):
-                        chains.append(new_chain)
-                        if len(chains) >= max_chains:
-                            return chains
+                # Target reached when every wanted output type is present on
+                # some produced variable — again by type, not by name.
+                wanted = CodeSnippet("", "", "", dict(target_outputs), {})
+                if self._match_inputs(wanted, new_vars) is not None:
+                    chains.append(new_chain)
+                    if len(chains) >= max_chains:
+                        return sorted(chains, key=lambda c: c.total_cost)
                 # Continue search
                 queue.append((new_vars, new_chain))
-        return chains
+        return sorted(chains, key=lambda c: c.total_cost)
 
 # ----------------------------------------------------------------------
 # Demo: creative assembly of water treatment and energy management
@@ -186,7 +225,7 @@ if __name__ == "__main__":
     pump = CodeSnippet(
         language="Python", name="electric_pump",
         code="water_volume_out = electric_energy_in * pump_efficiency / head",
-        input_types={"electric_energy_in": energy, "pump_efficiency": QuantityType(Extensivity.INTENSIVE, Conservation.PRODUCIBLE, Datum.RELATIVE, Transfer.COPY, (0,0,0,0,0,0,0), bounded=(0,1))},
+        input_types={"electric_energy_in": energy, "pump_efficiency": QuantityType(Extensivity.INTENSIVE, Conservation.PRODUCIBLE, Datum.RELATIVE, Transfer.COPY, (0,0,0,0,0,0,0), floor=0.0, ceiling=1.0)},
         output_types={"water_volume_out": water_volume},
         description="Converts electrical energy to pumped water volume."
     )

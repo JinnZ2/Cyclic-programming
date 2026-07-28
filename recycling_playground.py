@@ -44,7 +44,7 @@ PATTERN_TO_TYPE = {
     ),
     r'\b(ratio|efficiency|rate|percentage)\b': QuantityType(
         Extensivity.INTENSIVE, Conservation.PRODUCIBLE, Datum.RELATIVE,
-        Transfer.COPY, (0,0,0,0,0,0,0), bounded=(0,1)
+        Transfer.COPY, (0,0,0,0,0,0,0), floor=0.0, ceiling=1.0
     ),
     r'\b(mass|kg|weight)\b': QuantityType(
         Extensivity.EXTENSIVE, Conservation.CONSERVED, Datum.ABSOLUTE,
@@ -54,7 +54,13 @@ PATTERN_TO_TYPE = {
 
 def infer_type_from_name(name: str) -> Optional[QuantityType]:
     """Heuristic: match variable/function name against known patterns."""
-    name_lower = name.lower()
+    # Separators must be normalised before matching. The patterns above are
+    # anchored with \b, and Python's re counts "_" as a word character, so
+    # \bwater\b does NOT match "water_out" or "pump_water". Since Python names
+    # are overwhelmingly snake_case that left the whole table nearly dead and
+    # every inferred output type empty. Turning separators into spaces makes
+    # \b land where it reads as though it should.
+    name_lower = re.sub(r'[^a-z0-9]+', ' ', name.lower())
     for pattern, qtype in PATTERN_TO_TYPE.items():
         if re.search(pattern, name_lower):
             return qtype

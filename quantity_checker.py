@@ -62,11 +62,33 @@ class QuantityVar:
         self._val = new_val
         self._check_bounds()
 
+    def _reject_if_residue(self, op: str):
+        """
+        A convention tag marks a social fact wearing a number's clothes —
+        a zip code, an ISO code. The taxonomy forbids arithmetic and ordering
+        on these outright. The field was declared but never enforced, so
+        `zip_a + zip_b` used to return a number.
+        """
+        if self.qtype.convention is not None:
+            raise QuantityError(
+                f"{op} is meaningless on {self.name}: convention="
+                f"{self.qtype.convention} is a label, not a magnitude")
+
     # ---- arithmetic with type checking ----
 
     def __add__(self, other):
         if not isinstance(other, QuantityVar):
             raise QuantityError("Can only add QuantityVar")
+        self._reject_if_residue("Addition")
+        other._reject_if_residue("Addition")
+        # Two conventional zeros have no shared origin, so their sum
+        # denominates nothing: 3pm + 4pm is not a time. Only a datum
+        # *mismatch* was checked before, which let this through.
+        if (self.qtype.datum == Datum.RELATIVE
+                and other.qtype.datum == Datum.RELATIVE):
+            raise QuantityError(
+                f"Addition of RELATIVE '{self.name}' and '{other.name}' is "
+                "meaningless: both zeros are conventions")
         if self.qtype.extensivity == Extensivity.INTENSIVE:
             raise QuantityError(f"Addition of intensives '{self.name}' and '{other.name}' is meaningless")
         if other.qtype.extensivity == Extensivity.INTENSIVE:
@@ -83,6 +105,15 @@ class QuantityVar:
     def __sub__(self, other):
         if not isinstance(other, QuantityVar):
             raise QuantityError("Can only subtract QuantityVar")
+        self._reject_if_residue("Subtraction")
+        other._reject_if_residue("Subtraction")
+        # A monotone quantity running backwards is a fault, not a value —
+        # this is how a clock rollback becomes detectable rather than silent.
+        if (self.qtype.conservation == Conservation.MONOTONE
+                and other.value > 0):
+            raise QuantityError(
+                f"{self.name} is MONOTONE; decrementing by {other.value} "
+                "is a fault (clock rollback)")
         # Subtraction of RELATIVE yields ABSOLUTE delta
         if self.qtype.datum == Datum.RELATIVE and other.qtype.datum == Datum.RELATIVE:
             # result is an absolute delta
