@@ -321,6 +321,65 @@ but "is it dereferenced as an atom or as a composite", which splits the
 construct table's `int (id) -> ALL residue` row into `OPAQUE_LABEL` and
 `ENCODED_POSITION`.
 
+## Auditor contract
+
+`claim_audit_spin.py` audits an external document using the same verdict shape
+as `adversarial_corpus.py`, so the two compose. Its C9 finding — that a
+boolean auditor cannot detect its own failure — applies directly here, and
+`quantity_audit.py` had the flaw:
+
+```
+CELL_TYPES declares 4 cells.  _violations() checked 3.
+The footer read "4/10 operations satisfy their declared cell types".
+```
+
+`phase_angle` was declared and never checked, so the report claimed coverage
+it did not have. That is the same shape as a constraint "satisfied" by silent
+clamping: the violation does not vanish, it goes unlogged.
+
+The audit now follows the contract. Every declared cell yields an `AxisAudit`
+naming the boundary it was measured across and carrying a signed delta, or
+declaring itself unmeasured. `measured=False` is a first-class outcome that
+never counts as a pass, and the footer separates the two claims:
+
+```
+4/10 operations satisfy the cell types that were actually MEASURED
+coverage: 3/4 declared cells are checked — this is not the same claim as a pass rate
+  unmeasured  phase_angle: phase is cyclic (mod 2pi) and the taxonomy has no
+              CYCLIC domain value ...
+```
+
+**The unmeasured axis was hiding a real bug.** `resonate_with` phase-locks two
+fields with `avg_phase = (a.phase + b.phase) / 2` — a linear mean of a cyclic
+quantity. Two fields 20° apart, at 10° and 350°, lock to **180°**: the
+opposite direction.
+
+```
+mean( 10deg, 350deg)  linear= 180.00  circular= 360.00   <-- wrong
+mean(  0deg, 180deg)  linear=  90.00  circular=  90.00
+```
+
+This is the second independent witness for the missing axis. `F4` in
+`adversarial_corpus.py` reached it from a compass heading; `phase_angle`
+reaches it from the interpreter's own state. `BOUNDED` cannot express it,
+because bounded means clamped and wraparound is not saturation — so the
+honest report is `measured=False`, not a pass.
+
+### On the claims themselves
+
+The falsifiable verdicts hold on inspection: the Holevo bound does cap
+accessible information at n bits for n qubits (C1); SpinQuant's "spin" is an
+SO(n) rotation learned to flatten activation outliers before quantization,
+unrelated to electron spin (C2); attention preserves no Minkowski interval
+(C3); carrying state forward instead of re-encoding is recurrence, and the SSM
+family is the named art (C4).
+
+C6 and C7 are dated after this assistant's knowledge cutoff and were **not**
+independently checked here. They are recorded as the document's own claims,
+with its own caveats attached — headline qubit count versus usable register,
+and "targets" versus measured. Marking them VERIFIED is the author's
+attribution, not a confirmation from this repo.
+
 ## Open
 
 - [ ] Hand-annotate a corpus so E2 can run at all. Until then axis
@@ -331,7 +390,10 @@ construct table's `int (id) -> ALL residue` row into `OPAQUE_LABEL` and
       (internal structure consulted, grounded). The `I3`/`R1` pair is the
       fixture; E3's topology-only reading was not sufficient to separate them.
 - [ ] Add `CYCLIC[a,b)` to Axis 3, distinct from `BOUNDED`. Wraparound is not
-      saturation, and `F4` currently has no correct typing.
+      saturation. Two independent witnesses now: `F4` (a compass heading) and
+      `phase_angle` (the interpreter's own cell, currently unauditable for
+      exactly this reason). A `CYCLIC` value would also have to specify that
+      combination is a circular mean, since the linear mean is the live bug.
 - [ ] Give the reducer a way to *say* "inert". `pretype` has no residue
       verdict in its vocabulary, so it cannot score anything but abstain or
       ground — which is why `MISSED_GROUNDING` is structurally 0 for it and

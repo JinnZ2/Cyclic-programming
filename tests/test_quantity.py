@@ -65,7 +65,10 @@ def test_intensive_averages_against_its_extensive_weight():
 
 
 def test_relative_datum_forbids_addition_but_allows_difference():
-    clock = relative_scale(TIME, "clock")
+    # EXTENSIVE so the datum rule is what fires, not intensive-addition
+    clock = quantity.QuantityType(
+        quantity.Extensivity.EXTENSIVE, quantity.Conservation.PRODUCIBLE,
+        Datum.RELATIVE, quantity.Transfer.DEBIT_CREDIT, TIME, label="clock")
     with pytest.raises(DatumError):
         Quantity(12.0, clock) + Quantity(12.0, clock)
     elapsed = Quantity(17.0, clock) - Quantity(9.0, clock)
@@ -76,6 +79,14 @@ def test_relative_datum_forbids_addition_but_allows_difference():
 def test_relative_difference_may_go_negative():
     clock = relative_scale(TIME, "clock")
     assert (Quantity(9.0, clock) - Quantity(17.0, clock)).value == -8.0
+
+
+def test_intensives_cannot_be_added_pairwise():
+    # the rule held for total() but not for `+` until the conformance
+    # suite compared the two implementations
+    coherence = bounded_fraction("coherence")
+    with pytest.raises(ExtensivityError):
+        Quantity(0.4, coherence) + Quantity(0.5, coherence)
 
 
 def test_dimension_mismatch_is_rejected():
@@ -91,12 +102,16 @@ def test_monotone_cannot_run_backwards():
         Quantity(100.0, clock) - Quantity(1.0, clock)
 
 
-def test_bounded_fraction_refuses_to_leave_its_interval():
-    coherence = bounded_fraction("coherence")
+def test_bounded_quantity_refuses_to_leave_its_interval():
+    # EXTENSIVE bounded type: this checks the ceiling, one axis at a time
+    ratio = quantity.QuantityType(
+        quantity.Extensivity.EXTENSIVE, quantity.Conservation.PRODUCIBLE,
+        Datum.ABSOLUTE, quantity.Transfer.DEBIT_CREDIT,
+        DIMENSIONLESS, floor=0.0, ceiling=1.0, label="ratio")
     with pytest.raises(DomainError):
-        Quantity(0.95, coherence) + Quantity(0.2, coherence)
+        Quantity(0.95, ratio) + Quantity(0.2, ratio)
     with pytest.raises(DomainError):
-        Quantity(1.6, coherence)
+        Quantity(1.6, ratio)
 
 
 def test_residue_forbids_arithmetic_and_ordering():
@@ -285,3 +300,114 @@ def test_pretype_is_mildly_physics_biased_not_balanced():
     assert tally["FORCED_FIT"] > tally["MISSED_GROUNDING"]
     # it has no residue verdict at all, so it can never miss a grounding
     assert tally["MISSED_GROUNDING"] == 0
+
+
+# --- shared conformance across implementations -----------------------------
+
+def _conformance_ids():
+    import taxonomy_conformance as tc
+    return [(a.__name__, r.rid) for a in tc.ADAPTERS for r in tc.RULES]
+
+
+@pytest.mark.parametrize("adapter_name,rule_id", _conformance_ids())
+def test_every_implementation_satisfies_every_taxonomy_rule(adapter_name, rule_id):
+    # One spec, run against both implementations. Neither is the reference:
+    # quantity_checker was missing the relative/monotone/residue rules, and
+    # quantity allowed adding intensives with `+` while total() rejected it.
+    import taxonomy_conformance as tc
+    adapter = next(a for a in tc.ADAPTERS if a.__name__ == adapter_name)()
+    rule = next(r for r in tc.RULES if r.rid == rule_id)
+    assert rule.check(adapter), f"{adapter.name} violates: {rule.statement}"
+
+
+def test_declared_capabilities_actually_exist():
+    import taxonomy_conformance as tc
+    for name, entries in tc.capabilities().items():
+        for label, present in entries:
+            assert present, f"{name} claims {label!r} but it is missing"
+
+
+def test_each_implementation_has_capabilities_the_other_lacks():
+    # the reason both exist: they answer different questions
+    import taxonomy_conformance as tc
+    caps = tc.CAPABILITIES
+    assert caps["quantity.py"] and caps["quantity_checker.py"]
+    labels_a = {label for label, _ in caps["quantity.py"]}
+    labels_b = {label for label, _ in caps["quantity_checker.py"]}
+    assert labels_a - labels_b and labels_b - labels_a
+
+
+# --- the auditor contract: coverage is not a pass rate ---------------------
+
+def test_every_declared_cell_gets_an_axis_record():
+    # nothing is omitted silently: a declared cell either reports a measured
+    # delta or reports itself unmeasured
+    for row in quantity_audit.audit():
+        cells = {a.cell for a in row["axes"]}
+        assert cells == set(quantity_audit.CELL_TYPES)
+
+
+def test_unmeasured_axes_never_count_as_a_pass():
+    for row in quantity_audit.audit():
+        for axis in row["axes"]:
+            if not axis.measured:
+                assert axis.ok is None       # not True, not False
+                assert axis.detail           # and it says why
+
+
+def test_every_axis_record_declares_its_boundary():
+    # "conservation over WHAT system" must always be answered
+    for row in quantity_audit.audit():
+        for axis in row["axes"]:
+            assert axis.boundary
+
+
+def test_measured_axes_carry_a_signed_delta():
+    for row in quantity_audit.audit():
+        for axis in row["axes"]:
+            if axis.measured:
+                assert isinstance(axis.delta, float)
+
+
+def test_phase_angle_is_reported_unmeasured_not_passing():
+    assert "phase_angle" in quantity_audit.UNMEASURED
+    row = quantity_audit.audit()[0]
+    phase = next(a for a in row["axes"] if a.cell == "phase_angle")
+    assert phase.measured is False
+    # the reason is the missing CYCLIC domain value, not an oversight
+    assert "cyclic" in phase.detail.lower()
+
+
+def test_the_unmeasured_axis_hides_a_real_bug():
+    # resonate_with takes a linear mean of a cyclic quantity, so two fields
+    # 20 degrees apart phase-lock to the opposite direction
+    import math
+    from cyclic_interpreter import CyclicalInterpreter
+    interp = CyclicalInterpreter()
+    interp.create_field("a", 100.0, frequency=5.0)
+    interp.create_field("b", 100.0, frequency=5.0)
+    interp.fields["a"].energy.phase_angle = math.radians(10)
+    interp.fields["b"].energy.phase_angle = math.radians(350)
+    interp.execute("~(a ≈ b)")
+    locked = math.degrees(interp.fields["a"].energy.phase_angle) % 360
+    # the circular mean of 10 and 350 is 0; a linear mean gives 180
+    assert abs(locked - 180.0) < 1.0, locked
+
+
+# --- the claim audit composes with the corpus ------------------------------
+
+def test_claim_audit_verdicts_are_from_the_declared_vocabulary():
+    import claim_audit_spin as ca
+    allowed = {"VERIFIED", "SOURCE_OK_MECH_FALSE", "CATEGORY_ERROR",
+               "FORBIDDEN", "KNOWN_ART", "UNDECIDABLE"}
+    assert ca.CLAIMS
+    for claim in ca.CLAIMS:
+        assert claim.verdict in allowed
+        assert claim.why
+
+
+def test_every_non_verified_claim_carries_a_fix():
+    import claim_audit_spin as ca
+    for claim in ca.CLAIMS:
+        if claim.verdict != "VERIFIED":
+            assert claim.fix, f"{claim.cid} has no stated remedy"

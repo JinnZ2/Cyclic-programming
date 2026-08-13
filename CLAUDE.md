@@ -28,7 +28,9 @@ This repo holds two things that share one idea — track where capacity goes, an
 ├── taxonomy_lab.py              # Falsification harness (E1 coverage/E2 axes/E3 residue)
 ├── residue_probe.py             # E3 fixture: is a label actually inert?
 ├── adversarial_corpus.py        # Bias probe with an answer key (17 cases)
-├── quantity_checker.py          # Lighter typed-variable prototype (see note below)
+├── claim_audit_spin.py          # Claim audit, same verdict shape as the corpus
+├── quantity_checker.py          # Mutable typed variables, composes dimensions
+├── taxonomy_conformance.py      # One spec, checked against every implementation
 ├── code_playground.py           # Chains typed snippets into repurpose paths
 ├── recycling_playground.py      # Mines a source tree for reusable snippets
 ├── repurpose_workshop.py        # CLI over the catalogue and the playground
@@ -92,7 +94,13 @@ Two worked examples use the identical machinery on different domains: `component
 ### Physical Constraints — what is actually enforced
 
 Do not repeat the claim that all operations conserve energy; `quantity_audit.py`
-measures otherwise, and 4 of 10 operations currently satisfy their cell types.
+measures otherwise. 4 of 10 operations satisfy the cell types that are actually
+**measured**, and coverage is 3 of 4 declared cells — two separate numbers that
+must not be collapsed into one. `phase_angle` is declared and deliberately
+unmeasured, because phase is cyclic and the taxonomy has no `CYCLIC` domain
+value; an unmeasured axis reports `measured=False` and never counts as a pass.
+**When adding a check, add an `AxisAudit` record — silently omitting an axis
+is how a report claims coverage it does not have.**
 
 - **Energy conservation**: checked to 1e-10 via `check_energy_conservation()`, but
   that function has **exactly one call site**, inside `execute_bidirectional_interaction`.
@@ -110,23 +118,37 @@ an orphan credit is not expressible. Rebuilding `EnergyState` on it would change
 interpreter behaviour (resonance amplification is currently a documented feature),
 so treat that as a design decision, not a bug fix.
 
-### Two quantity implementations — unresolved
+### Two quantity implementations — deliberate, not duplication
 
-`quantity.py` and `quantity_checker.py` both implement the same taxonomy and
-neither strictly dominates the other:
+`quantity.py` and `quantity_checker.py` both implement the taxonomy. They are
+**not** rival drafts and neither is a reference for the other; they are aimed
+at different questions, so do not consolidate them:
 
-- `quantity.py` has immutable values, a per-axis error class, the `Ledger`,
-  `weighted_mean`, the transcendental dimensionless check, and `erase_cost`
-- `quantity_checker.py` has mutable `QuantityVar` with bounds-checked writes,
-  and `__mul__`/`__truediv__` that compose dimensions — which `quantity.py`
-  does not have at all
+- `quantity.py` — immutable values, per-axis error classes, the `Ledger`,
+  `weighted_mean`, the transcendental check, `erase_cost`. Answers *"is this
+  operation legal?"*, which is why `quantity_audit.py` uses it to audit the
+  interpreter.
+- `quantity_checker.py` — mutable `QuantityVar` with bounds-checked writes,
+  and `__mul__`/`__truediv__` that compose dimensions (which `quantity.py`
+  lacks entirely). Answers *"what can I build from these?"*, which is why the
+  four playground modules use it.
 
-`quantity_audit.py` and the taxonomy tests import the first; the four
-playground modules import the second. Consolidating means picking a direction
-and porting what the loser has, so it is a design decision, not cleanup. Until
-then, **fix any taxonomy rule in both** — `quantity_checker` silently allowed
-`RELATIVE + RELATIVE`, monotone decrements, and arithmetic on a `convention`
-residue until those were added to match `quantity.py`.
+What must not diverge is the **spec**. `taxonomy_conformance.py` writes each
+taxonomy rule once and runs it against every implementation, and the pytest
+suite parameterises over (implementation × rule). Each caught real gaps in the
+other on its first run: `quantity_checker` was missing `RELATIVE + RELATIVE`,
+monotone decrements and residue arithmetic; `quantity.py` rejected summing
+intensives in `total()` but happily added them with `+`.
+
+**When adding a taxonomy rule, add it to `taxonomy_conformance.RULES`** — that
+is what forces it into both. Keep rule specs axis-isolated (vary one axis from
+the default) so a failure names one axis instead of whichever guard fired
+first; several tests originally used an INTENSIVE type to check the domain and
+datum axes and broke when the extensivity rule was added.
+
+Capability differences are recorded in `taxonomy_conformance.CAPABILITIES` and
+verified to exist, so the table cannot rot. An implementation is not deficient
+for lacking a `Ledger` or lacking `mul`/`div`.
 
 ### COBOL-Inspired Bridge
 
