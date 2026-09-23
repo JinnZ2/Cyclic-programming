@@ -7,7 +7,7 @@ name = "cyclic-programming"
 version = "0.1.0"
 description = "An energy-accounting interpreter and a cascade model for when repair stops being worth it"
 readme = "README.md"
-license = "MIT"
+license = "CC0-1.0"
 requires-python = ">=3.9"
 authors = [
     {name = "JinnZ2"}

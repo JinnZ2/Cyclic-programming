@@ -223,4 +223,4 @@ where the interpreter's own invariants are not upheld.
 
 ## License
 
-MIT. Copyright 2025 JinnZ2.
+CC0-1.0. Copyright 2025 JinnZ2.
