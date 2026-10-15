@@ -226,4 +226,4 @@ where the interpreter's own invariants are not upheld.
 
 ## License
 
-MIT. Copyright 2025 JinnZ2.
+Owner-authored work is dedicated to the public domain under CC0 1.0 Universal. The vendored upstream matrix at `vendor/component-failure-db/matrices/repurpose_effectiveness.csv` remains under its upstream CC0 1.0 Universal license; see `LICENSE_HISTORY.md`.
