@@ -7,7 +7,7 @@ This repo holds two things that share one idea — track where capacity goes, an
 1. **A proof-of-concept interpreter** for a small language whose operations are written as energy transfers using mathematical Unicode operators, with a COBOL-inspired alternative syntax. Energy is bookkeeping, not joules: the physics is a modeling metaphor, and docs should not claim otherwise.
 2. **A cascade model** that uses the same accounting to ask when a degrading system passes the point where continuing is cheaper than reversing, and whether repurposing keeps it on the near side.
 
-**License:** MIT (Copyright 2025 JinnZ2). The cascade-model modules carry CC0 headers from their original author.
+**License:** Owner-authored work is dedicated under CC0-1.0. The vendored `vendor/component-failure-db/matrices/repurpose_effectiveness.csv` remains under its upstream CC0-1.0 license; see `LICENSE_HISTORY.md`. The cascade-model modules retain their existing CC0 headers.
 
 ## Repository Structure
 
@@ -46,7 +46,7 @@ This repo holds two things that share one idea — track where capacity goes, an
 ├── QUICK_REFERENCE.md           # Syntax quick reference guide
 ├── Cyclic_language_complete.md  # Full feature matrix with verified results
 ├── Expanded.md                  # Extended features documentation
-└── LICENSE                      # MIT License
+└── LICENSE                      # CC0 1.0 Universal legal code
 ```
 
 ## Cascade model
@@ -232,6 +232,22 @@ pip install -e .
 # Or install with dev dependencies (pytest)
 pip install -e ".[dev]"
 ```
+
+
+<!-- clone-refspec-note v1.1 -->
+## Cloning and pushing
+Shallow clones are single-branch by default.
+Before pushing any branch other than the default
+branch, run:
+
+    git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+    git fetch --depth 1
+
+Or clone with: git clone --depth 1 --no-single-branch <url>
+Without this, the first push of a new branch
+fails the tracking-ref check even when the
+commit landed.
+<!-- /clone-refspec-note v1.1 -->
 
 ### Running
 
